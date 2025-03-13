@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../utils/constants.dart';
 import 'package:confetti/confetti.dart';
+import 'package:event_prokit/main.dart'; // Import main.dart for appStore
 
 class Vote extends StatefulWidget {
   @override
@@ -16,13 +17,12 @@ class Vote extends StatefulWidget {
 class VoteState extends State<Vote> {
   List<Map<String, dynamic>> countries = [
     {"name": "Ethiopia", "nativeName": "ኢትዮጵያ", "votes": 0, "flag": "🇪🇹", "color": Colors.green},
-    {"name": " Republic", "nativeName": "República ", "votes": 0, "flag": "🇩🇴", "color": Colors.red},
+    {"name": "Dominican Republic", "nativeName": "República Dominicana", "votes": 0, "flag": "🇩🇴", "color": Colors.red},
     {"name": "Singapore", "nativeName": "新加坡", "votes": 0, "flag": "🇸🇬", "color": Colors.red},
     {"name": "Zambia", "nativeName": "Zambia", "votes": 0, "flag": "🇿🇲", "color": Colors.orange},
   ];
 
   late ConfettiController _confettiController;
-  bool isDarkMode = false;
 
   @override
   void initState() {
@@ -70,8 +70,7 @@ class VoteState extends State<Vote> {
     int totalVotes = countries.map((c) => c["votes"]).reduce((a, b) => a + b) + 1; // Avoid division by zero
 
     return Scaffold(
-      backgroundColor: isDarkMode ? Colors.grey[900] : Colors.grey[100],
-      
+      backgroundColor: appStore.isDarkModeOn ? Colors.grey[900] : Colors.grey[100], // Use appStore for theme
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -81,7 +80,7 @@ class VoteState extends State<Vote> {
                 // Leaderboard Section
                 Container(
                   padding: EdgeInsets.all(16),
-                  color: isDarkMode ? Colors.black : white,
+                  color: appStore.isDarkModeOn ? cardDarkColor : white, // Dynamic color based on theme
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -94,8 +93,10 @@ class VoteState extends State<Vote> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("${sortedCountries[0]['name']} Leads!", style: boldTextStyle(size: 18, color: isDarkMode ? white : black)),
-                              Text("${sortedCountries[0]['votes']} votes", style: secondaryTextStyle(color: isDarkMode ? grey : black)),
+                              Text("${sortedCountries[0]['name']} Leads!",
+                                  style: boldTextStyle(size: 18, color: appStore.isDarkModeOn ? white : black)),
+                              Text("${sortedCountries[0]['votes']} votes",
+                                  style: secondaryTextStyle(color: appStore.isDarkModeOn ? grey : black)),
                             ],
                           ),
                         ],
@@ -121,7 +122,10 @@ class VoteState extends State<Vote> {
                         padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [countries[index]["color"].withOpacity(0.2), isDarkMode ? Colors.grey[800]! : white],
+                            colors: [
+                              countries[index]["color"].withOpacity(0.2),
+                              appStore.isDarkModeOn ? Colors.grey[800]! : white
+                            ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -138,8 +142,10 @@ class VoteState extends State<Vote> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(countries[index]["name"], style: boldTextStyle(size: 18, color: isDarkMode ? white : black)),
-                                    Text(countries[index]["nativeName"], style: secondaryTextStyle(size: 14, color: isDarkMode ? grey : grey)),
+                                    Text(countries[index]["name"],
+                                        style: boldTextStyle(size: 18, color: appStore.isDarkModeOn ? white : black)),
+                                    Text(countries[index]["nativeName"],
+                                        style: secondaryTextStyle(size: 14, color: appStore.isDarkModeOn ? grey : grey)),
                                     4.height,
                                     SizedBox(
                                       width: 150,
@@ -150,7 +156,8 @@ class VoteState extends State<Vote> {
                                       ),
                                     ),
                                     4.height,
-                                    Text("${countries[index]["votes"]} votes", style: secondaryTextStyle(color: isDarkMode ? grey : black)),
+                                    Text("${countries[index]["votes"]} votes",
+                                        style: secondaryTextStyle(color: appStore.isDarkModeOn ? grey : black)),
                                   ],
                                 ),
                               ],

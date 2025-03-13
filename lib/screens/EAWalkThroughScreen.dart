@@ -44,6 +44,8 @@ class _EAWalkThroughScreenState extends State<EAWalkThroughScreen> {
         print('User: ${googleUser.displayName}');
         print('Email: ${googleUser.email}');
         print('Photo URL: ${googleUser.photoUrl}');
+      
+
         
         
         // Navigate to next screen

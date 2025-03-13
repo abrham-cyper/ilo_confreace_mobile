@@ -5,6 +5,7 @@ import 'package:event_prokit/utils/EAapp_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:confetti/confetti.dart'; // Add confetti for a cool effect
 
 // Define a Spacing utility class for consistent gaps
 class Spacing {
@@ -25,6 +26,7 @@ class AboutScreen extends StatefulWidget {
 class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  late ConfettiController _confettiController; // Add confetti controller
 
   @override
   void initState() {
@@ -40,18 +42,28 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+
+    // Initialize confetti controller
+    _confettiController = ConfettiController(duration: Duration(seconds: 2));
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _confettiController.dispose();
     super.dispose();
+  }
+
+  // Trigger confetti on tap (e.g., on header)
+  void _triggerConfetti() {
+    _confettiController.play();
   }
 
   @override
   Widget build(BuildContext context) {
     return Observer(
       builder: (_) => Scaffold(
+        backgroundColor: appStore.isDarkModeOn ? Colors.grey[900] : Colors.grey[100], // Dynamic background
         appBar: AppBar(
           backgroundColor: primaryColor1,
           title: Text(
@@ -64,43 +76,57 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: Container(
-          color: Colors.grey[100], // Light background for professional look
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: Spacing.medium, vertical: Spacing.large),
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Section
-                  _buildHeaderSection(context),
-                  SizedBox(height: Spacing.large),
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: Spacing.medium, vertical: Spacing.large),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header Section
+                    GestureDetector(
+                      onTap: _triggerConfetti, // Trigger confetti on tap
+                      child: _buildHeaderSection(context),
+                    ),
+                    SizedBox(height: Spacing.large),
 
-                  // History and Overview Section
-                  _buildSection(
-                    title: "History and Overview",
-                    content:
-                        "From humble beginnings as a small gathering of 21 labour-based engineers in Mbeya, Tanzania, in 1990, the regional Conference has become an international attraction bringing over 500 practitioners from Africa, Asia, Latin America, and beyond. It is now a self-financing, nationally owned event, offering an international platform for south-south learning on pro-employment practices.",
-                    icon: Icons.history,
-                  ),
-                  SizedBox(height: Spacing.large),
+                    // History and Overview Section
+                    _buildSection(
+                      title: "History and Overview",
+                      content:
+                          "From humble beginnings as a small gathering of 21 labour-based engineers in Mbeya, Tanzania, in 1990, the regional Conference has become an international attraction bringing over 500 practitioners from Africa, Asia, Latin America, and beyond. It is now a self-financing, nationally owned event, offering an international platform for south-south learning on pro-employment practices.",
+                      icon: Icons.history,
+                    ),
+                    SizedBox(height: Spacing.large),
 
-                  // Conference Details Section
-                  _buildSection(
-                    title: "Conference Details",
-                    content:
-                        "Held every eighteen months at a different venue across the African continent, the Conference embodies the spirit of south-south cooperation and international solidarity. The 19th Conference took place in Kigali, Rwanda, from May 15-19, 2023, themed ‘Promoting skills and productive (decent) jobs for our common better future’. It attracted 1,060 participants from 42 countries across Africa, Asia, Europe, and America.",
-                    icon: Icons.event,
-                  ),
-                  SizedBox(height: Spacing.large),
+                    // Conference Details Section
+                    _buildSection(
+                      title: "Conference Details",
+                      content:
+                          "Held every eighteen months at a different venue across the African continent, the Conference embodies the spirit of south-south cooperation and international solidarity. The 19th Conference took place in Kigali, Rwanda, from May 15-19, 2023, themed ‘Promoting skills and productive (decent) jobs for our common better future’. It attracted 1,060 participants from 42 countries across Africa, Asia, Europe, and America.",
+                      icon: Icons.event,
+                    ),
+                    SizedBox(height: Spacing.large),
 
-                  // Contact Us Section
-                  _buildContactSection(),
-                ],
+                    // Contact Us Section
+                    _buildContactSection(),
+                  ],
+                ),
               ),
             ),
-          ),
+            // Confetti Widget
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConfettiWidget(
+                confettiController: _confettiController,
+                blastDirectionality: BlastDirectionality.explosive,
+                shouldLoop: false,
+                colors: [primaryColor1, Colors.yellow, Colors.green, Colors.blue],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -112,7 +138,14 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
       width: context.width(),
       padding: EdgeInsets.all(Spacing.medium),
       decoration: BoxDecoration(
-        color: white,
+        gradient: LinearGradient(
+          colors: [
+            primaryColor1.withOpacity(0.2),
+            appStore.isDarkModeOn ? Colors.grey[800]! : white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -132,7 +165,11 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
           SizedBox(height: Spacing.small),
           Text(
             "20th ILO Regional Conference",
-            style: primaryTextStyle(size: 18, color: grey, weight: FontWeight.w600),
+            style: primaryTextStyle(
+              size: 18,
+              color: appStore.isDarkModeOn ? grey : Colors.grey[600],
+              weight: FontWeight.w600,
+            ),
             textAlign: TextAlign.center,
           ),
           SizedBox(height: Spacing.small),
@@ -147,7 +184,14 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
     return Container(
       padding: EdgeInsets.all(Spacing.medium),
       decoration: BoxDecoration(
-        color: white,
+        gradient: LinearGradient(
+          colors: [
+            Colors.grey.withOpacity(0.1),
+            appStore.isDarkModeOn ? Colors.grey[800]! : white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -175,7 +219,10 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
           SizedBox(height: Spacing.small),
           Text(
             content,
-            style: primaryTextStyle(size: 16, color: Colors.grey[800]),
+            style: primaryTextStyle(
+              size: 16,
+              color: appStore.isDarkModeOn ? Colors.grey[300] : Colors.grey[800],
+            ),
           ),
         ],
       ),
@@ -187,7 +234,14 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
     return Container(
       padding: EdgeInsets.all(Spacing.medium),
       decoration: BoxDecoration(
-        color: white,
+        gradient: LinearGradient(
+          colors: [
+            primaryColor1.withOpacity(0.1),
+            appStore.isDarkModeOn ? Colors.grey[800]! : white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -215,7 +269,10 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
           SizedBox(height: Spacing.small),
           Text(
             "For more information, reach out to the Ethiopian Road Administration:",
-            style: primaryTextStyle(size: 16, color: Colors.grey[800]),
+            style: primaryTextStyle(
+              size: 16,
+              color: appStore.isDarkModeOn ? Colors.grey[300] : Colors.grey[800],
+            ),
           ),
           SizedBox(height: Spacing.medium),
           _buildContactItem(Icons.email, "info@era.gov.et"),
@@ -234,7 +291,11 @@ class _AboutScreenState extends State<AboutScreen> with SingleTickerProviderStat
         SizedBox(width: Spacing.medium),
         Text(
           text,
-          style: primaryTextStyle(size: 16, color: primaryColor1, weight: FontWeight.w600),
+          style: primaryTextStyle(
+            size: 16,
+            color: primaryColor1,
+            weight: FontWeight.w600,
+          ),
         ),
       ],
     );

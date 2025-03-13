@@ -6,6 +6,9 @@ import 'package:event_prokit/utils/EAColors.dart';
 import 'package:event_prokit/utils/EADataProvider.dart';
 import 'package:event_prokit/utils/EAImages.dart';
 import 'package:event_prokit/main.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'EAReviewScreen.dart';
 import 'EATicketDetailScreen.dart';
 
@@ -26,7 +29,50 @@ class EAEventDetailScreen2 extends StatefulWidget {
 class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
   PageController pageController = PageController(initialPage: 0);
   int currentIndexPage = 0;
-  bool fev = false;
+  bool fev = false; // Tracks if the event is liked or not
+
+  // Function to handle the API call for liking the event
+  Future<void> toggleLike() async {
+    const String apiUrl = 'http://192.168.122.25:3000/api/news/67d23d74a2f7c45b706995d3/like';
+    const String userId = '67cc7d96e67a183122f447c7'; // Hardcoded userId for this example
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        setState(() {
+          fev = !fev; // Toggle the like state
+        });
+        print('Toast message: ${fev ? 'Event liked!' : 'Event unliked!'}');
+        Fluttertoast.showToast(
+          msg: fev ? 'Event liked!' : 'Event unliked!',
+          toastLength: Toast.LENGTH_SHORT,
+          backgroundColor: Colors.black,
+          textColor: Colors.white,
+        );
+      } else {
+        print('Toast message: Failed to toggle like: ${response.statusCode}');
+        Fluttertoast.showToast(
+          msg: 'You alerday liked',
+          toastLength: Toast.LENGTH_SHORT,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+        );
+      }
+    } catch (e) {
+      print('Toast message: Error: $e');
+      Fluttertoast.showToast(
+        msg: 'Error: $e',
+        toastLength: Toast.LENGTH_SHORT,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,18 +118,19 @@ class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
                 ),
               ),
               actions: [
-                // Icon(AntDesign.sharealt, color: white).paddingRight(12),
-                Icon(Icons.favorite_border, color: white).paddingRight(12),
+                GestureDetector(
+                  onTap: toggleLike, // Trigger the like function on tap
+                  child: Icon(
+                    fev ? Icons.favorite : Icons.favorite_border, // Toggle between filled and border icon
+                    color: fev ? Colors.red : white, // Change color when liked
+                  ).paddingRight(12),
+                ),
               ],
             ),
           ];
         },
         body: SingleChildScrollView(
           child: InkWell(
-            // Make the whole section clickable
-            // onTap: () {
-            //   EATicketDetailScreen().launch(context, pageRouteAnimation: PageRouteAnimation.SlideBottomTop);
-            // },
             splashColor: primaryColor1.withOpacity(0.2), // Cool splash effect
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +143,7 @@ class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
                       child: Text(
                         widget.detail ?? 'This is come and back',
                         style: boldTextStyle(),
-                      ).paddingOnly(left: 12, bottom: 8),
+                      ).paddingOnly(left: 12, right: 12, bottom: 8),
                     ),
                   ],
                 ).paddingOnly(left: 12, bottom: 8),

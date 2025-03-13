@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:event_prokit/model/EAReviewModel.dart';
@@ -6,6 +7,19 @@ import 'package:event_prokit/utils/EAapp_widgets.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:timeago/timeago.dart' as timeago;
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: EAReviewScreen(),
+    );
+  }
+}
 
 class EAReviewScreen extends StatefulWidget {
   const EAReviewScreen({Key? key}) : super(key: key);
@@ -16,7 +30,7 @@ class EAReviewScreen extends StatefulWidget {
 
 class _EAReviewScreenState extends State<EAReviewScreen> {
   TextEditingController reviewController = TextEditingController();
-  Future<EAReviewModel>? reviewData;
+  Future<List<EAReviewModel>>? reviewData;
 
   @override
   void initState() {
@@ -24,40 +38,45 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
     reviewData = fetchReviewData();
   }
 
-  Future<EAReviewModel> fetchReviewData() async {
+  Future<List<EAReviewModel>> fetchReviewData() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.75.25:3000/api/news/67d23a1da2f7c45b706995a3'));
+      final response = await http.get(Uri.parse('${AppConstants.baseUrl}/api/news/67d23d74a2f7c45b706995d3'));
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body)['news'];
 
-        // Convert createdAt to a DateTime object
-        DateTime createdAt = DateTime.parse(jsonData['comments']?.isNotEmpty == true ? jsonData['comments'][0]['createdAt'] ?? '' : '');
+        List<EAReviewModel> reviews = [];
 
-        // Convert the DateTime to "ago" format
-        String timeAgo = timeago.format(createdAt);
+        // Loop through all comments and map them to the EAReviewModel
+        for (var comment in jsonData['comments']) {
+          DateTime createdAt = DateTime.parse(comment['createdAt']);
+          String timeAgo = timeago.format(createdAt);
 
-        return EAReviewModel(
-          name: jsonData['id'] ?? 'Unknown ID', // Fallback for name
-          image: jsonData['image'] ?? 'https://assets.iqonic.design/old-themeforest-images/prokit/datingApp/Image.9.jpg', // Use backend image or fallback
-          fev: false,
-          time: timeAgo, // Time in "ago" format
-          like: 12, // Hardcoded as per request
-          msg: jsonData['comments']?.isNotEmpty == true ? jsonData['comments'][0]['text'] ?? 'No message' : 'No comments yet',
-        );
+          reviews.add(EAReviewModel(
+            name: comment['user']['_id'] ?? 'Unknown User', // Display user _id as name
+            image: jsonData['image'] ?? 'https://assets.iqonic.design/old-themeforest-images/prokit/datingApp/Image.9.jpg',
+            fev: false,
+            time: timeAgo, // Display time in "ago" format
+            like: 12, // Hardcoded as per your request
+            msg: comment['text'] ?? 'No comments yet', // Display comment text
+          ));
+        }
+        return reviews;
       } else {
         throw Exception('Failed to load review data: ${response.statusCode}');
       }
     } catch (e) {
       print('Error fetching data: $e');
-      return EAReviewModel(
-        name: 'Error',
-        image: 'https://assets.iqonic.design/old-themeforest-images/prokit/datingApp/Image.9.jpg',
-        fev: false,
-        time: 'N/A',
-        like: 12,
-        msg: 'Failed to load data',
-      );
+      return [
+        EAReviewModel(
+          name: 'Error',
+          image: 'https://assets.iqonic.design/old-themeforest-images/prokit/datingApp/Image.9.jpg',
+          fev: false,
+          time: 'N/A',
+          like: 12,
+          msg: 'Failed to load data',
+        )
+      ];
     }
   }
 
@@ -91,7 +110,7 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
       ),
       body: Stack(
         children: [
-          FutureBuilder<EAReviewModel>(
+          FutureBuilder<List<EAReviewModel>>(
             future: reviewData,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -99,47 +118,53 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
               } else if (snapshot.hasError) {
                 return Center(child: Text('Error: ${snapshot.error}'));
               } else if (snapshot.hasData) {
-                EAReviewModel data = snapshot.data!;
+                List<EAReviewModel> reviews = snapshot.data!;
 
-                return Container(
-                  margin: EdgeInsets.all(8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      commonCachedNetworkImage(
-                        data.image!,
-                        fit: BoxFit.cover,
-                        height: 60,
-                        width: 60,
-                      ).cornerRadiusWithClipRRect(35),
-                      16.width,
-                      Column(
+                return ListView.builder(
+                  itemCount: reviews.length,
+                  itemBuilder: (context, index) {
+                    EAReviewModel data = reviews[index];
+                    return Container(
+                      margin: EdgeInsets.all(8),
+                      child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          Text(data.name!, style: boldTextStyle()), // ID as name
-                          4.height,
-                          data.msg == null
-                              ? SizedBox()
-                              : Text(
-                                  data.msg.validate(),
-                                  style: secondaryTextStyle(),
-                                ).visible(data.msg!.isNotEmpty), // Comment as message
-                          4.height,
-                          Text(data.time!, style: secondaryTextStyle()), // Time from backend, now in "ago" format
-                        ],
-                      ).expand(),
-                      Row(
-                        children: [
-                          Text(data.like!.toString(), style: secondaryTextStyle()).visible(data.like != null), // Likes hardcoded as 12
-                          IconButton(
-                            onPressed: () {},
-                            icon: Icon(Icons.favorite_border, size: 16),
+                          commonCachedNetworkImage(
+                            data.image!,
+                            fit: BoxFit.cover,
+                            height: 60,
+                            width: 60,
+                          ).cornerRadiusWithClipRRect(35),
+                          16.width,
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(data.name!, style: boldTextStyle()), // User _id as name
+                              4.height,
+                              data.msg == null
+                                  ? SizedBox()
+                                  : Text(
+                                      data.msg.validate(),
+                                      style: secondaryTextStyle(),
+                                    ).visible(data.msg!.isNotEmpty), // Comment text as message
+                              4.height,
+                              Text(data.time!, style: secondaryTextStyle()), // Time in "ago" format
+                            ],
+                          ).expand(),
+                          Row(
+                            children: [
+                              Text(data.like!.toString(), style: secondaryTextStyle()).visible(data.like != null),
+                              IconButton(
+                                onPressed: () {},
+                                icon: Icon(Icons.favorite_border, size: 16),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               }
               return Center(child: Text('No data available'));
@@ -176,7 +201,6 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
   }
 }
 
-// Assuming EAReviewModel class is defined as follows (update if different):
 class EAReviewModel {
   String? name;
   String? image;

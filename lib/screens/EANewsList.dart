@@ -1,10 +1,12 @@
 import 'package:event_prokit/screens/BecomePartener.dart';
 import 'package:event_prokit/utils/EAColors.dart';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:nb_utils/nb_utils.dart';
+ 
 
 // Model for EAEventList
 class EAEventList {
@@ -63,7 +65,7 @@ class _EANewsListState extends State<EANewsList> {
 
   Future<void> fetchPartners() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.75.25:3000/api/partners'));
+      final response = await http.get(Uri.parse('${AppConstants.baseUrl}/api/partners'));
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
         final partners = (jsonData['data'] as List)

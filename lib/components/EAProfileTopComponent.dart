@@ -144,7 +144,6 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
                     child: Container(
                       padding: EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -166,31 +165,58 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
                       ),
                     ),
                   ),
-                  16.height, 
-                    Row(
-                        children: [
-                          Text(
-                            hashTag,
-                            style: primaryTextStyle(),
-                            maxLines: isExpand ? hashTag.length : 1,
-                          ).expand(),
-                        ],
-                      ).expand(),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  4.height,
+                  Row(
                     children: [
-                      // Row(
-                      //   children: [
-                      //     Text(
-                      //       hashTag,
-                      //       style: primaryTextStyle(),
-                      //       maxLines: isExpand ? hashTag.length : 1,
-                      //     ).expand(),
-                      //   ],
-                      // ).expand(),
+                      Text(
+                        hashTag,
+                        style: primaryTextStyle(),
+                        maxLines: isExpand ? hashTag.length : 1,
+                      ).expand(),
                     ],
-                  ).expand(),
+                  ),
+                  18.height, // Add spacing between hashtag and icons
+                  // Row of Icons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center, // Center the icons
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          // Handle message icon tap (e.g., navigate to messaging screen)
+                          toast("Message icon tapped");
+                        },
+                        child: Icon(
+                          Icons.message,
+                          color: primaryColor1,
+                          size: 24,
+                        ),
+                      ),
+                      16.width, // Spacing between icons
+                      GestureDetector(
+                        onTap: () {
+                        
+                        },
+                        child: Icon(
+                          Icons.share,
+                          color: primaryColor1,
+                          size: 24,
+                        ),
+                      ),
+                      16.width, // Spacing between icons
+                      GestureDetector(
+                        onTap: () {
+                          // Handle another icon tap
+                          toast("Favorite icon tapped");
+                        },
+                        child: Icon(
+                          Icons.favorite_border,
+                          color: primaryColor1,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                  16.height, // Add spacing below icons
                 ],
               ).paddingTop(0),
             ),
@@ -249,7 +275,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-    
       body: Column(
         children: [
           Expanded(
@@ -266,7 +291,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
               ),
             ),
           ),
-      // 
         ],
       ),
     );
