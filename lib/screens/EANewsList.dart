@@ -63,7 +63,7 @@ class _EANewsListState extends State<EANewsList> {
 
   Future<void> fetchPartners() async {
     try {
-      final response = await http.get(Uri.parse('http://192.168.43.25:3000/api/partners'));
+      final response = await http.get(Uri.parse('http://192.168.75.25:3000/api/partners'));
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
         final partners = (jsonData['data'] as List)
