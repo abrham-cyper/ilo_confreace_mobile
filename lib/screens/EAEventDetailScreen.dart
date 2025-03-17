@@ -294,26 +294,36 @@ class _EAEventDetailScreenState extends State<EAEventDetailScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: Container(
-        alignment: Alignment.center,
-        margin: EdgeInsets.all(20),
-        width: context.width(),
-        height: 50,
-        decoration: boxDecorationWithShadow(
-          borderRadius: radius(24),
-          gradient: LinearGradient(colors: [primaryColor1, primaryColor2]),
-        ),
-        child: widget.price == "Free"
-            ? Text('Join it free'.toUpperCase(), style: boldTextStyle(color: white))
-            : Text(
-                'Register'.toUpperCase(),
-                style: boldTextStyle(color: white),
-              ),
-      ).onTap(
-        () {
-          EATicketDetailScreen().launch(context);
-        },
-      ),
+   bottomNavigationBar: Container(
+  alignment: Alignment.center,
+  margin: EdgeInsets.all(20),
+  width: context.width(),
+  height: 50,
+  decoration: boxDecorationWithShadow(
+    borderRadius: radius(24),
+    gradient: LinearGradient(colors: [primaryColor1, black]),
+  ),
+  child: InkWell(
+    onTap: () async {
+      const url = 'https://iloethiopia2025.gov.et/';
+      if (await canLaunch(url)) {
+        await launch(url);
+      } else {
+        throw 'Could not launch $url';
+      }
+    },
+    child: Center(
+      child: widget.price == "Free"
+          ? Text('Join it free'.toUpperCase(), style: boldTextStyle(color: white))
+          : Text(
+              'Register'.toUpperCase(),
+              style: boldTextStyle(color: white),
+            ),
+    ),
+  ),
+),
+
     );
+
   }
 }

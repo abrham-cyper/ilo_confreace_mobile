@@ -1,4 +1,5 @@
 import 'package:event_prokit/utils/EAapp_widgets.dart';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -11,6 +12,7 @@ import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'EAReviewScreen.dart';
 import 'EATicketDetailScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EAEventDetailScreen2 extends StatefulWidget {
   final String? name;
@@ -23,20 +25,192 @@ class EAEventDetailScreen2 extends StatefulWidget {
   EAEventDetailScreen2({this.name, this.hashTag, this.attending, this.price, this.image, this.detail});
 
   @override
-  _EAEventDetailScreen2tate createState() => _EAEventDetailScreen2tate();
+  _EAEventDetailScreen2State createState() => _EAEventDetailScreen2State();
 }
 
-class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
+class _EAEventDetailScreen2State extends State<EAEventDetailScreen2> {
   PageController pageController = PageController(initialPage: 0);
   int currentIndexPage = 0;
   bool fev = false; // Tracks if the event is liked or not
+  String? creatorFullname; // To store the event creator's fullname
+  Map<String, String> commenterNames = {}; // Map to store commenter ID -> Fullname
 
-  // Function to handle the API call for liking the event
-  Future<void> toggleLike() async {
-    const String apiUrl = 'http://192.168.122.25:3000/api/news/67d23d74a2f7c45b706995d3/like';
-    const String userId = '67cc7d96e67a183122f447c7'; // Hardcoded userId for this example
+  @override
+  void initState() {
+    super.initState();
+    _checkInitialLikeStatus();
+    _fetchCreatorFullname();
+    _fetchCommenterNames(); // Fetch commenter names when the screen initializes
+  }
 
+  // Function to fetch eventId and userId from SharedPreferences
+  Future<Map<String, String?>> _getIdsFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final eventId = prefs.getString('event_id');
+    final userId = prefs.getString('user_id');
+    print("Retrieved event_id: $eventId, user_id: $userId");
+    return {'eventId': eventId, 'userId': userId};
+  }
+
+  // Function to fetch the creator's fullname
+  Future<void> _fetchCreatorFullname() async {
     try {
+      final ids = await _getIdsFromPrefs();
+      final eventId = ids['eventId'];
+
+      if (eventId == null) {
+        print("No event ID found, skipping creator fetch");
+        setState(() {
+          creatorFullname = 'Unknown';
+        });
+        return;
+      }
+
+      // Fetch event details to get creator ID
+      final response = await http.get(
+        Uri.parse('${AppConstants.baseUrl}/api/news/$eventId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final eventData = jsonDecode(response.body);
+        String? creatorId = eventData['creatorId'] ?? eventData['userId']; // Adjust based on your API
+
+        if (creatorId != null) {
+          final userResponse = await http.get(
+            Uri.parse('${AppConstants.baseUrl}/api/user/userid/$creatorId'),
+          );
+          if (userResponse.statusCode == 200) {
+            final userData = jsonDecode(userResponse.body);
+            setState(() {
+              creatorFullname = userData['user']['fullname'] ?? 'Unknown';
+            });
+            print("Creator Fullname: $creatorFullname");
+          } else {
+            setState(() {
+              creatorFullname = 'Unknown';
+            });
+            print("Failed to fetch user: ${userResponse.statusCode}");
+          }
+        } else {
+          setState(() {
+            creatorFullname = 'Unknown';
+          });
+          print("No creator ID found in event data");
+        }
+      } else {
+        setState(() {
+          creatorFullname = 'Unknown';
+        });
+        print("Failed to fetch event: ${response.statusCode}");
+      }
+    } catch (e) {
+      setState(() {
+        creatorFullname = 'Unknown';
+      });
+      print("Error fetching creator fullname: $e");
+    }
+  }
+
+  // Function to check if the event is already liked by the user
+  Future<void> _checkInitialLikeStatus() async {
+    try {
+      final ids = await _getIdsFromPrefs();
+      final eventId = ids['eventId'];
+      final userId = ids['userId'];
+
+      if (eventId == null || userId == null) {
+        print("Event ID or User ID not found, skipping initial like check");
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('${AppConstants.baseUrl}/api/news/$eventId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final eventData = jsonDecode(response.body);
+        final likedBy = (eventData['likedBy'] as List<dynamic>).map((item) => item['_id'] as String).toList();
+        setState(() {
+          fev = likedBy.contains(userId);
+        });
+        print("Initial like status: $fev");
+      } else {
+        print("Failed to fetch event details: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error checking initial like status: $e");
+    }
+  }
+
+  // Function to fetch full names of commenters
+  Future<void> _fetchCommenterNames() async {
+    try {
+      final ids = await _getIdsFromPrefs();
+      final eventId = ids['eventId'];
+
+      if (eventId == null) {
+        print("No event ID found, skipping commenter fetch");
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('${AppConstants.baseUrl}/api/news/$eventId'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final eventData = jsonDecode(response.body);
+        final likedBy = (eventData['likedBy'] as List<dynamic>).map((item) => item['_id'] as String).toList();
+
+        // Fetch full names for each commenter ID
+        for (String commenterId in likedBy) {
+          final userResponse = await http.get(
+            Uri.parse('${AppConstants.baseUrl}/api/user/userid/$commenterId'),
+            headers: {'Content-Type': 'application/json'},
+          );
+
+          if (userResponse.statusCode == 200) {
+            final userData = jsonDecode(userResponse.body);
+            setState(() {
+              commenterNames[commenterId] = userData['user']['fullname'] ?? 'Unknown';
+            });
+            print("Commenter Fullname for ID $commenterId: ${commenterNames[commenterId]}");
+          } else {
+            setState(() {
+              commenterNames[commenterId] = 'Unknown';
+            });
+            print("Failed to fetch user for ID $commenterId: ${userResponse.statusCode}");
+          }
+        }
+      } else {
+        print("Failed to fetch event details: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error fetching commenter names: $e");
+    }
+  }
+
+  // Function to handle the API call for liking/unliking the event
+  Future<void> toggleLike() async {
+    try {
+      final ids = await _getIdsFromPrefs();
+      final eventId = ids['eventId'];
+      final userId = ids['userId'];
+
+      if (eventId == null || userId == null) {
+        Fluttertoast.showToast(
+          msg: 'Error: Event ID or User ID not found',
+          toastLength: Toast.LENGTH_SHORT,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return;
+      }
+
+      final String apiUrl = '${AppConstants.baseUrl}/api/news/$eventId/like';
+
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: {'Content-Type': 'application/json'},
@@ -45,7 +219,7 @@ class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         setState(() {
-          fev = !fev; // Toggle the like state
+          fev = !fev;
         });
         print('Toast message: ${fev ? 'Event liked!' : 'Event unliked!'}');
         Fluttertoast.showToast(
@@ -54,10 +228,12 @@ class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
           backgroundColor: Colors.black,
           textColor: Colors.white,
         );
+        // Refresh commenter names after liking/unliking
+        _fetchCommenterNames();
       } else {
         print('Toast message: Failed to toggle like: ${response.statusCode}');
         Fluttertoast.showToast(
-          msg: 'You alerday liked',
+          msg: 'You already liked this event',
           toastLength: Toast.LENGTH_SHORT,
           backgroundColor: Colors.green,
           textColor: Colors.white,
@@ -119,10 +295,10 @@ class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
               ),
               actions: [
                 GestureDetector(
-                  onTap: toggleLike, // Trigger the like function on tap
+                  onTap: toggleLike,
                   child: Icon(
-                    fev ? Icons.favorite : Icons.favorite_border, // Toggle between filled and border icon
-                    color: fev ? Colors.red : white, // Change color when liked
+                    fev ? Icons.favorite : Icons.favorite_border,
+                    color: fev ? Colors.red : white,
                   ).paddingRight(12),
                 ),
               ],
@@ -131,7 +307,7 @@ class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
         },
         body: SingleChildScrollView(
           child: InkWell(
-            splashColor: primaryColor1.withOpacity(0.2), // Cool splash effect
+            splashColor: primaryColor1.withOpacity(0.2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -147,27 +323,50 @@ class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
                     ),
                   ],
                 ).paddingOnly(left: 12, bottom: 8),
+                // Display creator's fullname
+                Text(
+                  "Posted by: ${creatorFullname ?? 'Loading...'}",
+                  style: secondaryTextStyle(size: 14),
+                ).paddingOnly(left: 12, bottom: 8),
+                16.height,
+                // Display list of likers/commenters with their full names
+                if (commenterNames.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Liked by:",
+                        style: boldTextStyle(size: 16),
+                      ).paddingOnly(left: 12, bottom: 8),
+                      ...commenterNames.entries.map((entry) {
+                        return Text(
+                          entry.value, // Display full name
+                          style: secondaryTextStyle(size: 14),
+                        ).paddingOnly(left: 12, bottom: 4);
+                      }).toList(),
+                    ],
+                  ),
                 16.height,
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space out elements
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      100.width, // Spacer
+                      100.width,
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [primaryColor1, primaryColor2], // Cool gradient
+                            colors: [primaryColor1, primaryColor2],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(20), // Rounded corners
+                          borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
                               color: primaryColor1.withOpacity(0.4),
                               blurRadius: 8,
-                              offset: Offset(0, 4), // Shadow effect
+                              offset: Offset(0, 4),
                             ),
                           ],
                         ),
@@ -180,7 +379,7 @@ class _EAEventDetailScreen2tate extends State<EAEventDetailScreen2> {
                         ),
                       ).onTap(() {
                         EAReviewScreen().launch(context, pageRouteAnimation: PageRouteAnimation.SlideBottomTop);
-                      }, splashColor: white.withOpacity(0.3)), // Cool splash effect on tap
+                      }, splashColor: white.withOpacity(0.3)),
                     ],
                   ),
                 ),

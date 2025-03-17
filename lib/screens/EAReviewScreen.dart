@@ -7,6 +7,7 @@ import 'package:event_prokit/utils/EAapp_widgets.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(MyApp());
@@ -30,7 +31,8 @@ class EAReviewScreen extends StatefulWidget {
 
 class _EAReviewScreenState extends State<EAReviewScreen> {
   TextEditingController reviewController = TextEditingController();
-  Future<List<EAReviewModel>>? reviewData;
+  Future<List<dynamic>>? reviewData;
+  Map<String, String> userCache = {}; // Cache user full names
 
   @override
   void initState() {
@@ -38,29 +40,88 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
     reviewData = fetchReviewData();
   }
 
-  Future<List<EAReviewModel>> fetchReviewData() async {
+  // Function to fetch eventId and userId from SharedPreferences
+  Future<Map<String, String?>> _getIdsFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final eventId = prefs.getString('event_id');
+    final userId = prefs.getString('user_id');
+    print("Retrieved event_id: $eventId, user_id: $userId");
+    return {'eventId': eventId, 'userId': userId};
+  }
+
+  // Function to fetch user's full name from API and cache it
+  Future<String> fetchUserFullName(String userId) async {
+    if (userCache.containsKey(userId)) {
+      return userCache[userId]!;
+    }
+
     try {
-      final response = await http.get(Uri.parse('${AppConstants.baseUrl}/api/news/67d23d74a2f7c45b706995d3'));
+      final response = await http.get(Uri.parse('http://49.13.202.68:5001/api/user/userid/$userId'));
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        String fullName = jsonData['user']['fullname'] ?? 'Unknown User';
+        userCache[userId] = fullName; // Cache the user's full name
+        return fullName;
+      } else {
+        throw Exception('Failed to fetch user details');
+      }
+    } catch (e) {
+      print('Error fetching user details: $e');
+      return 'Unknown User';
+    }
+  }
+
+  Future<List<dynamic>> fetchReviewData() async {
+    try {
+      final ids = await _getIdsFromPrefs();
+      final eventId = ids['eventId'];
+
+      if (eventId == null) {
+        print("No event ID found in SharedPreferences");
+        return [Text("No event selected", style: boldTextStyle())];
+      }
+
+      final response = await http.get(Uri.parse('${AppConstants.baseUrl}/api/news/$eventId'));
+      print("API Response Status: ${response.statusCode}");
+      print("API Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body)['news'];
+        final jsonData = jsonDecode(response.body);
+        print("Parsed JSON Data: $jsonData");
+
+        final comments = jsonData['comments'] as List<dynamic>? ?? [];
+        print("Comments Array: $comments");
+
+        if (comments.isEmpty) {
+          return [
+            Text(
+              "There is no comment",
+              style: boldTextStyle(),
+              textAlign: TextAlign.center,
+            )
+          ];
+        }
 
         List<EAReviewModel> reviews = [];
 
-        // Loop through all comments and map them to the EAReviewModel
-        for (var comment in jsonData['comments']) {
-          DateTime createdAt = DateTime.parse(comment['createdAt']);
+        // Preload full names for all users before building the review list
+        for (var comment in comments) {
+          DateTime createdAt = DateTime.parse(comment['createdAt'] ?? DateTime.now().toIso8601String());
           String timeAgo = timeago.format(createdAt);
 
+          String userId = comment['user']['_id'] ?? '';
+          String fullName = await fetchUserFullName(userId); // Retrieve the full name from cache or API
+
           reviews.add(EAReviewModel(
-            name: comment['user']['_id'] ?? 'Unknown User', // Display user _id as name
-            image: jsonData['image'] ?? 'https://assets.iqonic.design/old-themeforest-images/prokit/datingApp/Image.9.jpg',
+            name: fullName,
+            image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_2J6g7oY_G0-F8v_uPkF_ZIYabsxindVGg-wyoX7sFjgFgHUvc-bYXtWtnHcOctJoWv0&usqp=CAU',
             fev: false,
-            time: timeAgo, // Display time in "ago" format
-            like: 12, // Hardcoded as per your request
-            msg: comment['text'] ?? 'No comments yet', // Display comment text
+            time: timeAgo,
+            like: 12,
+            msg: comment['text'] ?? 'No comment text',
           ));
         }
+        print("Reviews Generated: $reviews");
         return reviews;
       } else {
         throw Exception('Failed to load review data: ${response.statusCode}');
@@ -68,41 +129,59 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
     } catch (e) {
       print('Error fetching data: $e');
       return [
-        EAReviewModel(
-          name: 'Error',
-          image: 'https://assets.iqonic.design/old-themeforest-images/prokit/datingApp/Image.9.jpg',
-          fev: false,
-          time: 'N/A',
-          like: 12,
-          msg: 'Failed to load data',
+        Text(
+          "There was an error: $e",
+          style: boldTextStyle(),
+          textAlign: TextAlign.center,
         )
       ];
     }
   }
 
-  Widget slideLeftBackground() {
-    return Container(
-      color: primaryColor1,
-      child: Align(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[
-            Icon(Icons.arrow_back, color: Colors.white),
-            10.width,
-            Icon(Icons.info_outline, color: Colors.white),
-            20.width,
-          ],
-        ),
-        alignment: Alignment.centerRight,
-      ),
-    );
+  // Function to post a comment
+  Future<void> _postComment(String text) async {
+    try {
+      final ids = await _getIdsFromPrefs();
+      final eventId = ids['eventId'];
+      final userId = ids['userId'];
+
+      if (eventId == null || userId == null) {
+        toast("Error: Event ID or User ID not found");
+        return;
+      }
+
+      if (text.trim().isEmpty) {
+        toast("Comment text is required");
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('${AppConstants.baseUrl}/api/news/$eventId/comment'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'userId': userId, 'text': text}),
+      );
+      print("Post Comment Response: ${response.statusCode} - ${response.body}");
+
+      if (response.statusCode == 201) {
+        setState(() {
+          reviewData = fetchReviewData();
+        });
+        reviewController.clear();
+        toast("Comment added successfully");
+      } else {
+        throw Exception('Failed to add comment: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error posting comment: $e');
+      toast("Failed to add comment: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: getAppBar(
-        "Reviews",
+        "Reviews 2",
         backWidget: Icon(Icons.close, color: white).onTap(() {
           finish(context);
         }),
@@ -110,56 +189,51 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
       ),
       body: Stack(
         children: [
-          FutureBuilder<List<EAReviewModel>>(
+          FutureBuilder<List<dynamic>>(
             future: reviewData,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
+                return Center(child: Text('Error: ${snapshot.error}', style: boldTextStyle()));
               } else if (snapshot.hasData) {
-                List<EAReviewModel> reviews = snapshot.data!;
+                List<dynamic> data = snapshot.data!;
 
+                if (data.length == 1 && data[0] is Text) {
+                  return Center(child: data[0]);
+                }
+
+                List<EAReviewModel> reviews = data.cast<EAReviewModel>();
                 return ListView.builder(
                   itemCount: reviews.length,
                   itemBuilder: (context, index) {
-                    EAReviewModel data = reviews[index];
+                    EAReviewModel review = reviews[index];
                     return Container(
                       margin: EdgeInsets.all(8),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           commonCachedNetworkImage(
-                            data.image!,
+                            review.image!,
                             fit: BoxFit.cover,
-                            height: 60,
-                            width: 60,
-                          ).cornerRadiusWithClipRRect(35),
+                            height: 70, // Increased from 50 to 70
+                            width: 70,  // Increased from 50 to 70
+                          ).cornerRadiusWithClipRRect(35), // Adjusted radius to match new size (half of width/height)
                           16.width,
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(data.name!, style: boldTextStyle()), // User _id as name
-                              4.height,
-                              data.msg == null
-                                  ? SizedBox()
-                                  : Text(
-                                      data.msg.validate(),
-                                      style: secondaryTextStyle(),
-                                    ).visible(data.msg!.isNotEmpty), // Comment text as message
-                              4.height,
-                              Text(data.time!, style: secondaryTextStyle()), // Time in "ago" format
-                            ],
-                          ).expand(),
-                          Row(
-                            children: [
-                              Text(data.like!.toString(), style: secondaryTextStyle()).visible(data.like != null),
-                              IconButton(
-                                onPressed: () {},
-                                icon: Icon(Icons.favorite_border, size: 16),
-                              ),
-                            ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(review.name!, style: boldTextStyle()),
+                                4.height,
+                                Text(
+                                  review.msg ?? 'No comment text',
+                                  style: secondaryTextStyle(),
+                                ).visible(review.msg!.isNotEmpty),
+                                4.height,
+                                Text(review.time!, style: secondaryTextStyle(size: 12)),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -167,7 +241,7 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
                   },
                 );
               }
-              return Center(child: Text('No data available'));
+              return Center(child: Text('No data available', style: boldTextStyle()));
             },
           ),
           Align(
@@ -184,11 +258,13 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: "Write a review",
-                      suffixIcon: Icon(Icons.send, size: 30, color: primaryColor1).onTap(
-                        () {
-                          reviewController.clear();
-                        },
-                      ),
+                      suffixIcon: Icon(Icons.send, size: 30, color: primaryColor1).onTap(() {
+                        if (reviewController.text.isNotEmpty) {
+                          _postComment(reviewController.text);
+                        } else {
+                          toast("Please enter a comment");
+                        }
+                      }),
                     ),
                   ),
                 ],
@@ -210,4 +286,7 @@ class EAReviewModel {
   String? msg;
 
   EAReviewModel({this.name, this.image, this.fev, this.time, this.like, this.msg});
+
+  @override
+  String toString() => 'EAReviewModel(name: $name, msg: $msg, time: $time)';
 }

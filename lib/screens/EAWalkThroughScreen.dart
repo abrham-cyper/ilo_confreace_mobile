@@ -83,13 +83,13 @@ class _EAWalkThroughScreenState extends State<EAWalkThroughScreen> {
                     },
                   ),
                 ),
-                Positioned(
-                  right: 20,
-                  top: 40,
-                  child: Text('Skip', style: primaryTextStyle(color: primaryColor1)).onTap(() {
-                    EADashedBoardScreen().launch(context);
-                  }),
-                ),
+                // Positioned(
+                //   right: 20,
+                //   top: 40,
+                //   child: Text('Skip', style: primaryTextStyle(color: primaryColor1)).onTap(() {
+                //     EADashedBoardScreen().launch(context);
+                //   }),
+                // ),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   mainAxisSize: MainAxisSize.max,

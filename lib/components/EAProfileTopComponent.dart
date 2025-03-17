@@ -1,13 +1,16 @@
+import 'package:event_prokit/screens/EAExplorerScreen.dart';
+import 'package:event_prokit/screens/EAMayBEYouKnowScreen.dart';
+import 'package:event_prokit/screens/QRScannerScreen.dart';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:event_prokit/screens/EAConnectionScreen.dart';
-import 'package:event_prokit/screens/EAIndexScreen.dart';
-import 'package:event_prokit/screens/EARewardScreen.dart';
 import 'package:event_prokit/utils/EAColors.dart';
-import 'package:event_prokit/utils/EAImages.dart';
 import 'package:event_prokit/utils/EAapp_widgets.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EAProfileTopComponent extends StatefulWidget {
   const EAProfileTopComponent({Key? key}) : super(key: key);
@@ -18,11 +21,106 @@ class EAProfileTopComponent extends StatefulWidget {
 
 class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
   bool isExpand = true;
-  String hashTag = "Happy to be part of the ILO Conference. Excited to connect, learn, and contribute to global impact in art, fashion, culture, food & drink, sport, and nightlife.";
-  final String qrData = "http://localhost:3000/api/user/id"; // QR code data
+  String hashTag =
+      "Happy to be part of the ILO Conference. Excited to connect, learn, and contribute to global impact in art, fashion, culture, food & drink, sport, and nightlife.";
+
+  // Variables to store fetched user data
+  String? fullname;
+  String? country;
+  String? bio;
+  String? profilePic;
+  String? userId; // To store the user's _id
+  String? qrData; // QR code data, will be set dynamically
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserData(); // Fetch user data when the widget initializes
+  }
+
+  Future<void> fetchUserData() async {
+  final prefs = await SharedPreferences.getInstance();
+  final accessToken = prefs.getString('accessToken');
+  final refreshToken = prefs.getString('refreshToken');
+
+  if (accessToken == null) {
+    toast("User not logged in");
+    return;
+  }
+
+  try {
+    final response = await http.get(
+      Uri.parse('${AppConstants.baseUrl}/api/user/me'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final userData = data['data'];
+
+      setState(() {
+        fullname = userData['fullname'] ?? 'Unknown user';
+        country = userData['country'] ?? 'Country';
+        bio = userData['bio'] ?? '';
+        profilePic = userData['profilePic'] ??
+            'https://i.pinimg.com/736x/47/3e/84/473e84e35274f087695236414ff8df3b.jpg';
+        userId = userData['_id']; // Store the user ID
+        qrData = userId; // Set QR code data to only the userId
+      });
+    } else if (response.statusCode == 401) {
+      final newAccessToken = await refreshAccessToken(refreshToken);
+      if (newAccessToken != null) {
+        await fetchUserData();
+      } else {
+        toast("Session expired. Please log in again.");
+      }
+    } else {
+      final error = jsonDecode(response.body);
+      toast("Failed to fetch user data: ${error['error']}");
+    }
+  } catch (e) {
+    toast("Error fetching user data: $e");
+  }
+}
+
+  // Function to refresh the access token using the refresh token
+  Future<String?> refreshAccessToken(String? refreshToken) async {
+    if (refreshToken == null) return null;
+
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.baseUrl}/api/user/refreshToken'), // Adjust the endpoint as needed
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final newAccessToken = data['accessToken'];
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('accessToken', newAccessToken);
+        return newAccessToken;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print("Error refreshing token: $e");
+      return null;
+    }
+  }
 
   // Function to show the QR code in a popup
   void _showQrCodePopup(BuildContext context) {
+    if (qrData == null) {
+      toast("User data not loaded yet. Please wait.");
+      return;
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -52,12 +150,12 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
                 ),
                 16.height,
                 QrImageView(
-                  data: qrData,
+                  data: qrData!,
                   version: QrVersions.auto,
                   size: 250.0,
                   gapless: false,
-                  foregroundColor: primaryColor1, // Use your app's primary color
-                  embeddedImage: AssetImage('images/app_icon.png'), // Optional: Add an embedded logo
+                  foregroundColor: primaryColor1,
+                  embeddedImage: AssetImage('images/app_icon.png'),
                   embeddedImageStyle: QrEmbeddedImageStyle(
                     size: Size(40, 40),
                   ),
@@ -98,9 +196,7 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
     );
 
     if (scannedData != null) {
-      // Handle the scanned data (e.g., show a toast or navigate to the URL)
       toast("Scanned QR Code: $scannedData");
-      // Example: Navigate to the scanned URL (if it's a URL)
       if (scannedData.startsWith("http")) {
         // Use a URL launcher or handle the navigation as needed
         // For example: launchUrl(Uri.parse(scannedData));
@@ -130,108 +226,114 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
                 borderRadius: BorderRadius.all(Radius.circular(16)),
                 boxShadow: defaultBoxShadow(),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  36.height,
-                  Text("Abrham", style: boldTextStyle()),
-                  8.height,
-                  Text("Ethiopia, Addis Abebe", style: primaryTextStyle()),
-                  8.height, // Small gap before QR code button
-                  // QR Code Button
-                  GestureDetector(
-                    onTap: () => _showQrCodePopup(context),
-                    child: Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          QrImageView(
-                            data: qrData,
-                            version: QrVersions.auto,
-                            size: 40.0, // Small size for the button
-                            gapless: false,
-                            foregroundColor: primaryColor1,
-                          ),
-                          8.width,
-                          Text(
-                            "Scan QR",
-                            style: primaryTextStyle(color: primaryColor1),
-                          ),
-                        ],
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    36.height,
+                    Text(fullname ?? 'Abrham', style: boldTextStyle()),
+                    8.height,
+                    Text(country ?? 'Ethiopia, Addis Abebe', style: primaryTextStyle()),
+                    8.height,
+                    GestureDetector(
+                      onTap: () => _showQrCodePopup(context),
+                      child: Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            QrImageView(
+                              data: qrData ?? "${AppConstants.baseUrl}/api/user/default", // Fallback QR data
+                              version: QrVersions.auto,
+                              size: 40.0,
+                              gapless: false,
+                              foregroundColor: primaryColor1,
+                            ),
+                            8.width,
+                            Text(
+                              "Scan QR",
+                              style: primaryTextStyle(color: primaryColor1),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  4.height,
-                  Row(
-                    children: [
-                      Text(
-                        hashTag,
-                        style: primaryTextStyle(),
-                        maxLines: isExpand ? hashTag.length : 1,
-                      ).expand(),
-                    ],
-                  ),
-                  18.height, // Add spacing between hashtag and icons
-                  // Row of Icons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center, // Center the icons
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          // Handle message icon tap (e.g., navigate to messaging screen)
-                          toast("Message icon tapped");
-                        },
-                        child: Icon(
-                          Icons.message,
-                          color: primaryColor1,
-                          size: 24,
+                    4.height,
+                    Row(
+                      children: [
+                        Text(
+                          bio?.isNotEmpty == true ? bio! : hashTag,
+                          style: primaryTextStyle(),
+                          maxLines: isExpand ? null : 1,
+                          overflow: isExpand ? null : TextOverflow.ellipsis,
+                        ).expand(),
+                      ],
+                    ),
+                    18.height,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                       GestureDetector(
+  onTap: () {
+    // Navigate to EAMayBEYouKnowScreen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EAExplorerScreen(),
+      ),
+    );
+  },
+  child: Icon(
+    Icons.message,
+    color: primaryColor1,
+    size: 24,
+  ),
+),
+
+                        16.width,
+                        GestureDetector(
+                          onTap: () {
+                            // Handle share icon tap
+                          },
+                          child: Icon(
+                            Icons.share,
+                            color: primaryColor1,
+                            size: 24,
+                          ),
                         ),
-                      ),
-                      16.width, // Spacing between icons
-                      GestureDetector(
-                        onTap: () {
-                        
-                        },
-                        child: Icon(
-                          Icons.share,
-                          color: primaryColor1,
-                          size: 24,
+                        16.width,
+                        GestureDetector(
+                          onTap: () {
+                            toast("Favorite icon tapped");
+                          },
+                          child: Icon(
+                            Icons.favorite_border,
+                            color: primaryColor1,
+                            size: 24,
+                          ),
                         ),
-                      ),
-                      16.width, // Spacing between icons
-                      GestureDetector(
-                        onTap: () {
-                          // Handle another icon tap
-                          toast("Favorite icon tapped");
-                        },
-                        child: Icon(
-                          Icons.favorite_border,
-                          color: primaryColor1,
-                          size: 24,
-                        ),
-                      ),
-                    ],
-                  ),
-                  16.height, // Add spacing below icons
-                ],
-              ).paddingTop(0),
+                      ],
+                    ),
+                    36.height,
+                  ],
+                ).paddingTop(8),
+              ),
             ),
             Positioned(
               top: 130,
               child: commonCachedNetworkImage(
-                'https://i.pinimg.com/736x/f0/4b/c7/f04bc7f4b16a2fc94078139ad03e6f88.jpg',
+                profilePic ??
+                    'https://i.pinimg.com/736x/47/3e/84/473e84e35274f087695236414ff8df3b.jpg', // Updated fallback image
                 height: 100,
                 width: 100,
                 fit: BoxFit.cover,
               ).cornerRadiusWithClipRRect(50),
             ),
-            // QR Scanner Button in Top-Left Corner
             Positioned(
-              top: 30,
+              top: 35,
               left: 16,
               child: GestureDetector(
                 onTap: () => _openQrScanner(context),
@@ -252,58 +354,5 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
         ),
       ],
     );
-  }
-}
-
-// QR Scanner Screen
-class QRScannerScreen extends StatefulWidget {
-  @override
-  _QRScannerScreenState createState() => _QRScannerScreenState();
-}
-
-class _QRScannerScreenState extends State<QRScannerScreen> {
-  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
-  Barcode? result;
-  QRViewController? controller;
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            flex: 5,
-            child: QRView(
-              key: qrKey,
-              onQRViewCreated: _onQRViewCreated,
-              overlay: QrScannerOverlayShape(
-                borderColor: primaryColor1,
-                borderRadius: 10,
-                borderLength: 30,
-                borderWidth: 10,
-                cutOutSize: 300,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      setState(() {
-        result = scanData;
-      });
-      // Automatically pop the scanner screen and return the scanned data
-      Navigator.pop(context, scanData.code);
-    });
   }
 }

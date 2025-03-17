@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:nb_utils/nb_utils.dart';
@@ -18,19 +19,18 @@ class EAMayBEYouKnowScreen extends StatefulWidget {
 class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
   List<EAForYouModel> list = [];
   bool isLoading = true;
-  bool hasError = false; // Track if an error occurred
-  late IO.Socket socket; // Socket.IO client instance
+  bool hasError = false;
+  late IO.Socket socket;
 
   @override
   void initState() {
     super.initState();
-    initializeSocket(); // Initialize Socket.IO
+    initializeSocket();
     fetchData();
   }
 
-  // Function to initialize Socket.IO connection
   void initializeSocket() {
-    socket = IO.io('http://192.168.180.25:4000', <String, dynamic>{
+    socket = IO.io('http://49.13.202.68:4000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
@@ -45,58 +45,110 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
       print('Disconnected from Socket.IO server');
     });
 
-    // Listen for new messages in real-time
     socket.on('newMessage', (data) {
       print('New message received: $data');
-      fetchData(); // Refresh the list when a new message is received
+      fetchData(); // Refresh data when a new message arrives
     });
 
-    // Listen for messages seen events in real-time
     socket.on('messagesSeen', (data) {
       print('Messages seen: $data');
-      fetchData(); // Refresh the list when messages are seen
+      fetchData(); // Refresh data when messages are seen
     });
   }
 
-  // Function to join a conversation room
   void joinConversation(String conversationId) {
     socket.emit('joinConversation', conversationId);
     print('Joined conversation: $conversationId');
   }
 
-  // Function to fetch data from the backend
+  // Function to fetch fullname by userId
+  Future<String?> fetchFullname(String userId) async {
+    final url = 'http://49.13.202.68:5001/api/user/userid/$userId';
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['exists'] == true && data['user'] != null) {
+          return data['user']['fullname'] ?? 'Unknown';
+        }
+      }
+      return 'Unknown';
+    } catch (e) {
+      print('Error fetching fullname for $userId: $e');
+      return 'Unknown';
+    }
+  }
+
+  // Function to fetch the last message for a conversationId
+  Future<String?> fetchLastMessage(String conversationId) async {
+    final url = 'http://49.13.202.68:4000/api/messages/conversation/$conversationId';
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final List<dynamic> messages = jsonDecode(response.body);
+        if (messages.isNotEmpty) {
+          // The last message in the array is the most recent based on your API response
+          final lastMessage = messages.last;
+          return lastMessage['message'] ?? 'No message content';
+        }
+        return 'No messages yet';
+      }
+      return 'Failed to load messages';
+    } catch (e) {
+      print('Error fetching last message for $conversationId: $e');
+      return 'Error loading message';
+    }
+  }
+
   Future<void> fetchData() async {
     setState(() {
       isLoading = true;
-      hasError = false; // Reset error state
+      hasError = false;
     });
 
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('userid');
+
+      if (userId == null) {
+        setState(() {
+          isLoading = false;
+          hasError = true;
+        });
+        toast('User ID not found. Please log in again.');
+        return;
+      }
+
       final response = await http.get(
-        Uri.parse('http://192.168.180.25:4000/api/messages/list/john_doe'),
+        Uri.parse('http://49.13.202.68:4000/api/messages/list/$userId'),
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = jsonDecode(response.body);
-        print(jsonData);
+        print('Messages list response: $jsonData');
 
-        // Explicitly map the JSON data to List<EAForYouModel>
-        final List<EAForYouModel> fetchedList = jsonData.map((item) {
-          return EAForYouModel(
-            name: item['receiverUsername'] as String?,
-            add: item['conversationId'] as String?, // Use conversationId as add
+        // Fetch fullnames and last messages for each item
+        List<EAForYouModel> fetchedList = [];
+        for (var item in jsonData) {
+          String? receiverUserId = item['receiverUsername'] as String?;
+          String? conversationId = item['conversationId'] as String?;
+          String? fullname = receiverUserId != null ? await fetchFullname(receiverUserId) : 'Unknown';
+          String? lastMessage = conversationId != null ? await fetchLastMessage(conversationId) : 'No messages yet';
+
+          fetchedList.add(EAForYouModel(
+            name: fullname,
+            lastMessage: lastMessage,
             image: 'https://randomuser.me/api/portraits/men/1.jpg', // Placeholder image
-            fev: true, // Default value for fev
-            conversationId: item['conversationId'] as String?, // Store conversationId
-          );
-        }).toList();
+            fev: true,
+            conversationId: conversationId,
+          ));
+        }
 
         setState(() {
           list = fetchedList;
           isLoading = false;
         });
 
-        // Join all conversation rooms for real-time updates
         for (var item in fetchedList) {
           if (item.conversationId != null) {
             joinConversation(item.conversationId!);
@@ -120,14 +172,11 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
     }
   }
 
-  // Function to save conversationId to shared_preferences
   Future<void> saveConversationId(String conversationId) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('selectedConversationId', conversationId);
-      print('Conversation ID saved..........................: $conversationId');
-
-      // Retrieve and print the saved conversationId to verify
+      print('Conversation ID saved: $conversationId');
       final savedId = prefs.getString('selectedConversationId');
       print('Retrieved saved Conversation ID: $savedId');
     } catch (e) {
@@ -137,15 +186,16 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
 
   @override
   void dispose() {
-    socket.disconnect(); // Disconnect Socket.IO when the screen is disposed
+    socket.disconnect();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      
       body: isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: primaryColor1))
           : hasError
               ? Center(
                   child: Column(
@@ -154,14 +204,15 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
                       Text('Failed to load data', style: boldTextStyle()),
                       16.height,
                       ElevatedButton(
-                        onPressed: fetchData, // Retry fetching data
-                        child: Text('Retry'),
+                        onPressed: fetchData,
+                        style: ElevatedButton.styleFrom(backgroundColor: primaryColor1),
+                        child: Text('Retry', style: TextStyle(color: white)),
                       ),
                     ],
                   ),
                 )
               : list.isEmpty
-                  ? Center(child: Text('No data available'))
+                  ? Center(child: Text('No data available', style: secondaryTextStyle()))
                   : ListView.builder(
                       padding: EdgeInsets.all(8),
                       shrinkWrap: true,
@@ -169,7 +220,18 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
                       itemBuilder: (BuildContext context, int index) {
                         EAForYouModel data = list[index];
                         return Container(
-                          margin: EdgeInsets.all(8),
+                          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: appStore.isDarkModeOn ? Colors.grey[850] : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.3),
+                                spreadRadius: 1,
+                                blurRadius: 5,
+                              ),
+                            ],
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
@@ -178,14 +240,19 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
                                 fit: BoxFit.cover,
                                 height: 60,
                                 width: 60,
-                              ).cornerRadiusWithClipRRect(35),
+                              ).cornerRadiusWithClipRRect(30),
                               16.width,
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(data.name ?? 'Unknown', style: boldTextStyle()),
+                                  Text(data.name ?? 'Unknown', style: boldTextStyle(size: 18)),
                                   4.height,
-                                  Text(data.add ?? 'N/A', style: secondaryTextStyle()),
+                                  Text(
+                                    data.lastMessage ?? 'No messages yet',
+                                    style: secondaryTextStyle(size: 14),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ],
                               ).expand(),
                               IconButton(
@@ -204,35 +271,32 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
                                 ),
                               ),
                             ],
-                          ),
-                        ).onTap(
-                          () {
-                            String? username = list[index].name;
-                            String? conversationId = list[index].conversationId;
-                            if (conversationId != null) {
-                              saveConversationId(conversationId); // Save conversationId to shared_preferences
-                              joinConversation(conversationId); // Join the conversation room
-                            }
-                            EAChattingScreen(name: username).launch(context);
-                          },
-                        );
+                          ).paddingAll(8),
+                        ).onTap(() {
+                          String? fullname = list[index].name;
+                          String? conversationId = list[index].conversationId;
+                          if (conversationId != null) {
+                            saveConversationId(conversationId);
+                            joinConversation(conversationId);
+                          }
+                          EAChattingScreen(name: fullname).launch(context);
+                        });
                       },
                     ),
     );
   }
 }
 
-// Ensure EAForYouModel handles null safety correctly
 class EAForYouModel {
   String? name;
-  String? add;
+  String? lastMessage;
   String? image;
   bool? fev;
   String? conversationId;
 
   EAForYouModel({
     this.name,
-    this.add,
+    this.lastMessage,
     this.image,
     this.fev,
     this.conversationId,

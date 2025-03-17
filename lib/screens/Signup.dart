@@ -1,8 +1,12 @@
+import 'package:event_prokit/screens/Otp.dart';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:event_prokit/utils/EAColors.dart';
 import 'package:event_prokit/utils/EAapp_widgets.dart';
-import 'package:event_prokit/screens/EASelectHashtagScreen.dart'; // Next screen
+import 'package:event_prokit/screens/EASelectHashtagScreen.dart';
 
 class Signup extends StatefulWidget {
   const Signup({Key? key}) : super(key: key);
@@ -17,37 +21,88 @@ class _SignupState extends State<Signup> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
   final TextEditingController countryController = TextEditingController();
-  String gender = 'Male'; // Default gender selection
-  final _formKey = GlobalKey<FormState>(); // For form validation
-  bool isLoading = false; // To show loading state
+  final _formKey = GlobalKey<FormState>();
+  bool isLoading = false;
+  String? errorMessage;
 
-  // Simulate account creation (replace with real auth logic, e.g., Firebase)
-  Future<bool> registerUser(String fullName, String email, String password, String confirmPassword, String gender, String country) async {
-    await Future.delayed(Duration(seconds: 1)); // Simulated delay
-    // Replace with actual registration logic
-    return email.isNotEmpty && password.length >= 6 && password == confirmPassword;
+  // API endpoint
+  final String apiUrl = '${AppConstants.baseUrl}/api/user/signup';
+
+  Future<bool> registerUser({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        // Show success message about OTP
+        toast(responseData['message']);
+        return true;
+      } else {
+        setState(() {
+          errorMessage = responseData['error'] ?? 'Registration failed';
+        });
+        toast(errorMessage);
+        return false;
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Network error: Please check your connection';
+      });
+      toast(errorMessage);
+      return false;
+    }
   }
 
-  // Handle signup action
   Future<void> handleSignup() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => isLoading = true);
-      String fullName = fullNameController.text.trim();
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+
       String email = emailController.text.trim();
       String password = passwordController.text.trim();
       String confirmPassword = confirmPasswordController.text.trim();
-      String country = countryController.text.trim();
 
-      if (await registerUser(fullName, email, password, confirmPassword, gender, country)) {
-        toast('Account Created Successfully');
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => EASelectHashtagScreen(name: "Dashboard")),
-        );
-      } else {
-        toast('Registration Failed');
+      // Additional client-side validation
+      if (password != confirmPassword) {
+        setState(() {
+          errorMessage = 'Passwords do not match';
+          isLoading = false;
+        });
+        toast(errorMessage);
+        return;
       }
+
+      bool success = await registerUser(
+        email: email,
+        password: password,
+      );
+
       setState(() => isLoading = false);
+
+      // In your Signup screen's handleSignup method, replace the navigation part:
+if (success) {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => Otp(email: email),
+    ),
+  );
+}
     }
   }
 
@@ -55,7 +110,7 @@ class _SignupState extends State<Signup> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
-        body: Center(  // Center the content of the screen
+        body: Center(
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
@@ -64,7 +119,7 @@ class _SignupState extends State<Signup> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Welcome message at the top
+                    // Welcome message
                     Text(
                       "Welcome to Our App!",
                       style: TextStyle(
@@ -74,7 +129,6 @@ class _SignupState extends State<Signup> {
                       ),
                     ),
                     15.height,
-                    // Sign up message
                     Text(
                       "Please fill out the details below to create an account",
                       style: TextStyle(
@@ -84,7 +138,23 @@ class _SignupState extends State<Signup> {
                       textAlign: TextAlign.center,
                     ),
                     20.height,
-                    
+
+                    // Error message display
+                    if (errorMessage != null)
+                      Container(
+                        padding: EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          errorMessage!,
+                          style: TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    if (errorMessage != null) 15.height,
+
                     // Email Field
                     TextFormField(
                       controller: emailController,
@@ -114,6 +184,7 @@ class _SignupState extends State<Signup> {
                       },
                     ),
                     20.height,
+
                     // Password Field
                     TextFormField(
                       controller: passwordController,
@@ -143,6 +214,7 @@ class _SignupState extends State<Signup> {
                       },
                     ),
                     20.height,
+
                     // Confirm Password Field
                     TextFormField(
                       controller: confirmPasswordController,
@@ -172,8 +244,8 @@ class _SignupState extends State<Signup> {
                       },
                     ),
                     20.height,
-                    // Gender Field (optional, can be added if needed)
-                    
+
+                    // Signup Button
                     SizedBox(
                       width: context.width(),
                       height: 50,
@@ -188,7 +260,7 @@ class _SignupState extends State<Signup> {
                             ? SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(color: white, strokeWidth: 2),
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                               )
                             : Text(
                                 "Sign Up",
@@ -204,5 +276,15 @@ class _SignupState extends State<Signup> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    fullNameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    countryController.dispose();
+    super.dispose();
   }
 }

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../utils/constants.dart';
 import 'package:event_prokit/screens/EAEventDetailScreen2.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Added for SharedPreferences
 
 // Updated Event model to match the new schema
 class Event {
@@ -112,6 +113,13 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
     }
   }
 
+  // Function to save event ID to SharedPreferences
+  Future<void> _saveEventId(String eventId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('event_id', eventId);
+    print("Saved event_id to SharedPreferences: $eventId");
+  }
+
   @override
   void setState(fn) {
     if (mounted) super.setState(fn);
@@ -124,7 +132,7 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
           ? Center(child: CircularProgressIndicator()) // Show loading indicator if no data
           : ListView.builder(
               shrinkWrap: true,
-              padding: EdgeInsets.only(top: 0), // Fixed 'custom' to 'top'
+              padding: EdgeInsets.only(top: 0),
               itemCount: events.length,
               itemBuilder: (context, i) {
                 return Column(
@@ -133,7 +141,6 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
                       alignment: Alignment.bottomCenter,
                       children: [
                         commonCachedNetworkImage(events[i].image, height: 230, width: context.width(), fit: BoxFit.cover).cornerRadiusWithClipRRect(8),
-                       
                         Container(
                           alignment: Alignment.center,
                           padding: EdgeInsets.all(8),
@@ -164,7 +171,7 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('${events[i].note} ', style: secondaryTextStyle()), // Display like count
+                            Text('${events[i].note} ', style: secondaryTextStyle()),
                           ],
                         ),
                         6.height,
@@ -176,7 +183,7 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
                               children: [
                                 Icon(Entypo.location, size: 16),
                                 8.width,
-                                Text(events[i].address, style: secondaryTextStyle()), // Updated to 'address'
+                                Text(events[i].address, style: secondaryTextStyle()),
                               ],
                             ),
                             Text('${events[i].likedBy.length} Like', style: secondaryTextStyle(color: primaryColor1)),
@@ -194,13 +201,17 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
                                 // Text(events[i].attending, style: secondaryTextStyle()),
                               ],
                             ),
-                            Text('${events[i].comments.length} comments', style: secondaryTextStyle()), // Display comment count
+                            Text('${events[i].comments.length} comments', style: secondaryTextStyle()),
                           ],
                         ),
                       ],
                     ).paddingSymmetric(horizontal: 16),
                   ],
-                ).onTap(() {
+                ).onTap(() async {
+                  // Save the event ID to SharedPreferences before navigating
+                  await _saveEventId(events[i].id);
+
+                  // Navigate to event detail screen
                   EAEventDetailScreen2(
                     name: events[i].name,
                     hashTag: events[i].hashtag,
@@ -208,8 +219,6 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
                     price: events[i].price,
                     image: events[i].image,
                     detail: events[i].detail,
-                    
-                  
                   ).launch(context, pageRouteAnimation: PageRouteAnimation.Slide);
                 });
               },

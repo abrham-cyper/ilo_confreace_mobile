@@ -1,9 +1,16 @@
-import 'package:event_prokit/screens/Forgetpassword.dart';
+import 'package:event_prokit/screens/EADashedBoardScreen.dart';
+import 'package:event_prokit/screens/EAHomeScreen.dart';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:event_prokit/utils/EAColors.dart';
 import 'package:event_prokit/utils/EAapp_widgets.dart';
-import 'package:event_prokit/screens/EASelectHashtagScreen.dart'; // Next screen
+import 'package:event_prokit/screens/EASelectHashtagScreen.dart';
+import 'package:event_prokit/screens/Forgetpassword.dart';
+import 'package:uuid/constants.dart';
 
 class SignIn extends StatefulWidget {
   const SignIn({Key? key}) : super(key: key);
@@ -15,20 +22,77 @@ class SignIn extends StatefulWidget {
 class _SignInState extends State<SignIn> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>(); // For form validation
-  bool isLoading = false; // To show loading state
+  final _formKey = GlobalKey<FormState>();
+  bool isLoading = false;
+  String? errorMessage;
 
-  // Simulate authentication (replace with real auth logic, e.g., Firebase)
+  final String apiUrl = '${AppConstants.baseUrl}/api/user/login'; // Your backend API endpoint
+
+  
+Future<void> _storeUserData(String email, String accessToken, String refreshToken, String id) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Store user data in SharedPreferences
+    await prefs.setString('email', email);
+    await prefs.setString('accessToken', accessToken);
+    await prefs.setString('refreshToken', refreshToken);
+    await prefs.setString('userid', id);  // Saving the 'id' value
+    await prefs.setBool('isLoggedIn', true);
+
+    print("User data successfully stored.");
+  } catch (e) {
+    print("Error storing user data: $e");
+  }
+}
+  // Authenticate user with backend
   Future<bool> authenticateUser(String email, String password) async {
-    await Future.delayed(Duration(seconds: 1)); // Simulated delay
-    // Replace with actual authentication logic
-    return email.isNotEmpty && password.length >= 6; // Basic validation
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 200) {
+        // Store user data and tokens
+        await _storeUserData(
+          responseData['email'],
+          responseData['accessToken'],
+          responseData['refreshToken'],
+          responseData['id'], 
+        );
+        return true;
+      } else {
+        setState(() {
+          errorMessage = responseData['error'] ?? 'Login failed';
+        });
+        toast(errorMessage);
+        return false;
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Network error: Please check your connection';
+      });
+      toast(errorMessage);
+      return false;
+    }
   }
 
-  // Handle login action
   Future<void> handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => isLoading = true);
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+
       String email = emailController.text.trim();
       String password = passwordController.text.trim();
 
@@ -36,11 +100,10 @@ class _SignInState extends State<SignIn> {
         toast('Login Successful');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => EASelectHashtagScreen(name: "Dashboard")),
+            MaterialPageRoute(builder: (context) => EADashedBoardScreen()),
         );
-      } else {
-        toast('Invalid Credentials');
       }
+
       setState(() => isLoading = false);
     }
   }
@@ -53,19 +116,19 @@ class _SignInState extends State<SignIn> {
           key: _formKey,
           child: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 60.0), // More spacious padding
+              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 60.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Logo at the top
                   Image.asset(
-                    'images/logo.png', // Path to your logo image
-                    height:150, // Adjust height as needed
-                    width: 150,  // Adjust width as needed
-                    fit: BoxFit.cover, // Ensures the logo fits nicely
+                    'images/logo.png',
+                    height: 150,
+                    width: 150,
+                    fit: BoxFit.cover,
                   ),
-                  20.height, // Space between logo and title
-                  // Add a gradient or bold font styling for a more refined welcome text
+                  20.height,
+                  // Welcome text
                   Text(
                     "Welcome to 20th ILO Regional Conference",
                     style: TextStyle(
@@ -76,7 +139,24 @@ class _SignInState extends State<SignIn> {
                     textAlign: TextAlign.center,
                   ),
                   20.height,
-                  // Email Field with better styling
+
+                  // Error message display
+                  if (errorMessage != null)
+                    Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        errorMessage!,
+                        style: TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  if (errorMessage != null) 15.height,
+
+                  // Email Field
                   TextFormField(
                     controller: emailController,
                     keyboardType: TextInputType.emailAddress,
@@ -106,7 +186,8 @@ class _SignInState extends State<SignIn> {
                     },
                   ),
                   20.height,
-                  // Password Field with better styling
+
+                  // Password Field
                   TextFormField(
                     controller: passwordController,
                     obscureText: true,
@@ -136,7 +217,8 @@ class _SignInState extends State<SignIn> {
                     },
                   ),
                   40.height,
-                  // Sign In Button with enhanced design
+
+                  // Sign In Button
                   SizedBox(
                     width: context.width(),
                     height: 55,
@@ -162,6 +244,7 @@ class _SignInState extends State<SignIn> {
                     ),
                   ),
                   20.height,
+
                   // Forgot Password link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -169,7 +252,6 @@ class _SignInState extends State<SignIn> {
                       Text("Forgot your password? ", style: secondaryTextStyle(color: grey)),
                       GestureDetector(
                         onTap: () {
-                          // Navigate to the EAForgetPasswordScreen when "Reset" is clicked
                           Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => EAForgetPasswordScreen()),
@@ -189,5 +271,12 @@ class _SignInState extends State<SignIn> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
   }
 }

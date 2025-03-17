@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -22,40 +23,41 @@ class EAChattingScreenState extends State<EAChattingScreen> {
   TextEditingController msgController = TextEditingController();
   FocusNode msgFocusNode = FocusNode();
   List<EAMessageModel> msgListing = [];
-  var personName = '';
   bool isLoading = true;
-  bool hasError = false; // Track if an error occurred
+  bool hasError = false;
   String? conversationId;
-  late IO.Socket socket; // Socket.IO client instance
-  bool isTyping = false; // Track if the other user is typing
-  bool isOnline = false; // Track if the other user is online
+  late IO.Socket socket;
+  bool isTyping = false;
+  bool isOnline = false;
+  String? currentUserId; // Store the current user's ID
 
   @override
   void initState() {
     super.initState();
     init();
-    initializeSocket(); // Initialize Socket.IO
+    initializeSocket();
   }
 
   Future<void> init() async {
-    // Retrieve conversationId from shared_preferences
     final prefs = await SharedPreferences.getInstance();
     conversationId = prefs.getString('selectedConversationId');
+    currentUserId = prefs.getString('userid'); // Get the current user's ID
     print('Retrieved Conversation ID: $conversationId');
+    print('Current User ID: $currentUserId');
 
-    if (conversationId != null) {
-      await fetchChatMessages(); // Fetch messages and scroll to bottom
+    if (conversationId != null && currentUserId != null) {
+      await fetchChatMessages();
     } else {
-      print('No conversation ID found in shared_preferences');
+      print('Missing conversation ID or user ID');
       setState(() {
         isLoading = false;
+        hasError = true;
       });
     }
   }
 
-  // Function to initialize Socket.IO connection
   void initializeSocket() {
-    socket = IO.io('http://192.168.180.25:4000', <String, dynamic>{
+    socket = IO.io('http://49.13.202.68:4000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
@@ -65,22 +67,21 @@ class EAChattingScreenState extends State<EAChattingScreen> {
     socket.onConnect((_) {
       print('Connected to Socket.IO server');
       if (conversationId != null) {
-        joinConversation(conversationId!); // Join the conversation room
+        joinConversation(conversationId!);
       }
-      socket.emit('userConnected', 'john_doe'); // Emit user connected event
+      socket.emit('userConnected', currentUserId); // Emit current user's ID
     });
 
     socket.onDisconnect((_) {
       print('Disconnected from Socket.IO server');
     });
 
-    // Listen for new messages in real-time
     socket.on('newMessage', (data) {
       print('New message received: $data');
       setState(() {
         msgListing.add(EAMessageModel(
-          senderId: data['whosend'] == 'john_doe' ? EASender_id : EAReceiver_id,
-          receiverId: data['whosend'] == 'john_doe' ? EAReceiver_id : EASender_id,
+          senderId: data['senderUsername'] == currentUserId ? EASender_id : EAReceiver_id,
+          receiverId: data['senderUsername'] == currentUserId ? EAReceiver_id : EASender_id,
           msg: data['message'] as String?,
           time: DateFormat('hh:mm a').format(DateTime.parse(data['timestamp'] as String)),
           senderUsername: data['senderUsername'] as String?,
@@ -88,21 +89,17 @@ class EAChattingScreenState extends State<EAChattingScreen> {
           seen: data['seen'] as bool?,
         ));
       });
-      // Scroll to the bottom after receiving a new message
-      if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (scrollController.hasClients) {
-            scrollController.animateTo(
-              scrollController.position.maxScrollExtent,
-              duration: Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          }
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (scrollController.hasClients) {
+          scrollController.animateTo(
+            scrollController.position.maxScrollExtent,
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
     });
 
-    // Listen for messages seen events in real-time
     socket.on('messagesSeen', (data) {
       print('Messages seen: $data');
       if (data['conversationId'] == conversationId) {
@@ -114,16 +111,14 @@ class EAChattingScreenState extends State<EAChattingScreen> {
       }
     });
 
-    // Listen for typing events
     socket.on('typing', (data) {
-      if (data['conversationId'] == conversationId && data['user'] != 'john_doe') {
+      if (data['conversationId'] == conversationId && data['user'] != currentUserId) {
         setState(() {
           isTyping = data['isTyping'] as bool;
         });
       }
     });
 
-    // Listen for online users
     socket.on('onlineUsers', (users) {
       setState(() {
         isOnline = (users as List).contains(widget.name);
@@ -131,22 +126,19 @@ class EAChattingScreenState extends State<EAChattingScreen> {
     });
   }
 
-  // Function to join a conversation room
   void joinConversation(String conversationId) {
     socket.emit('joinConversation', conversationId);
     print('Joined conversation: $conversationId');
   }
 
-  // Function to emit typing event
   void onTyping(String value) {
     socket.emit('typing', {
       'conversationId': conversationId,
-      'user': 'john_doe', // Replace with actual user
+      'user': currentUserId,
       'isTyping': value.isNotEmpty,
     });
   }
 
-  // Function to fetch chat messages from the backend using the conversationId
   Future<void> fetchChatMessages() async {
     setState(() {
       isLoading = true;
@@ -155,18 +147,18 @@ class EAChattingScreenState extends State<EAChattingScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.180.25:4000/api/messages/conversation/$conversationId'),
+        Uri.parse('http://49.13.202.68:4000/api/messages/conversation/$conversationId'),
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonData = jsonDecode(response.body);
-        print(jsonData);
+        print('Fetched messages: $jsonData');
 
         setState(() {
           msgListing = jsonData.map((item) {
             return EAMessageModel(
-              senderId: item['whosend'] == 'john_doe' ? EASender_id : EAReceiver_id,
-              receiverId: item['whosend'] == 'john_doe' ? EAReceiver_id : EASender_id,
+              senderId: item['senderUsername'] == currentUserId ? EASender_id : EAReceiver_id,
+              receiverId: item['senderUsername'] == currentUserId ? EAReceiver_id : EASender_id,
               msg: item['message'] as String?,
               time: DateFormat('hh:mm a').format(DateTime.parse(item['timestamp'] as String)),
               senderUsername: item['senderUsername'] as String?,
@@ -177,20 +169,16 @@ class EAChattingScreenState extends State<EAChattingScreen> {
           isLoading = false;
         });
 
-        // Scroll to the bottom after loading messages
-        if (mounted) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (scrollController.hasClients) {
-              scrollController.animateTo(
-                scrollController.position.maxScrollExtent,
-                duration: Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          });
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (scrollController.hasClients) {
+            scrollController.animateTo(
+              scrollController.position.maxScrollExtent,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
 
-        // Mark messages as seen
         await markMessagesAsSeen();
       } else {
         print('Failed to load messages: ${response.statusCode}');
@@ -210,30 +198,27 @@ class EAChattingScreenState extends State<EAChattingScreen> {
     }
   }
 
-  // Function to send a message to the backend
   Future<void> sendClick() async {
-    if (msgController.text.trim().isNotEmpty && conversationId != null) {
+    if (msgController.text.trim().isNotEmpty && conversationId != null && currentUserId != null) {
       hideKeyboard(context);
 
-      // Prepare the payload
       final payload = {
         'conversationId': conversationId,
-        'senderUsername': 'jane_smith', // Hardcoded as per your example
-        'receiverUsername': widget.name, // Use the receiver's name
+        'senderUsername': currentUserId, // Use current user's ID
+        'receiverUsername': widget.name == 'Abrham' ? '67d5e72a00c420218a9bff36' : '67d5f09b00c420218a9bffad', // Adjust based on receiver
         'message': msgController.text.trim(),
       };
 
       try {
         final response = await http.post(
-          Uri.parse('http://192.168.180.25:4000/api/messages'),
+          Uri.parse('http://49.13.202.68:4000/api/messages'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(payload),
         );
 
         if (response.statusCode == 200 || response.statusCode == 201) {
           print('Message sent successfully: ${response.body}');
-          msgController.text = ''; // Clear the input field
-          // The new message will be added via Socket.IO 'newMessage' event
+          msgController.text = '';
         } else {
           print('Failed to send message: ${response.statusCode}');
           toast('Failed to send message. Please try again.');
@@ -247,24 +232,22 @@ class EAChattingScreenState extends State<EAChattingScreen> {
       setState(() {});
     } else {
       if (conversationId == null) {
-        print('No conversation ID available to send message');
         toast('No conversation selected. Please try again.');
       }
       FocusScope.of(context).requestFocus(msgFocusNode);
     }
   }
 
-  // Function to mark messages as seen
   Future<void> markMessagesAsSeen() async {
-    if (conversationId == null) return;
+    if (conversationId == null || currentUserId == null) return;
 
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.180.25:4000/api/messages/seen'),
+        Uri.parse('http://49.13.202.68:4000/api/messages/seen'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'conversationId': conversationId,
-          'receiverUsername': 'john_doe', // Replace with actual receiver username
+          'receiverUsername': currentUserId,
         }),
       );
 
@@ -285,7 +268,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
 
   @override
   void dispose() {
-    socket.disconnect(); // Disconnect Socket.IO when the screen is disposed
+    socket.disconnect();
     msgController.dispose();
     scrollController.dispose();
     msgFocusNode.dispose();
@@ -331,7 +314,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
                           Text('Failed to load messages', style: boldTextStyle()),
                           16.height,
                           ElevatedButton(
-                            onPressed: fetchChatMessages, // Retry fetching messages
+                            onPressed: fetchChatMessages,
                             child: Text('Retry'),
                           ),
                         ],
@@ -353,7 +336,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
                                   padding: EdgeInsets.only(top: 8, left: 8, right: 8, bottom: 70),
                                   itemBuilder: (_, index) {
                                     EAMessageModel data = msgListing[index];
-                                    var isMe = data.senderId == EASender_id; // Align based on sender
+                                    var isMe = data.senderId == EASender_id;
                                     return ChatMessageWidget1(isMe: isMe, data: data);
                                   },
                                 ),
@@ -394,7 +377,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
                     textCapitalization: TextCapitalization.sentences,
                     textInputAction: TextInputAction.done,
                     decoration: InputDecoration.collapsed(
-                      hintText: personName.isNotEmpty
+                      hintText: widget.name!.isNotEmpty
                           ? 'Write to ${widget.name}'
                           : 'Type a message',
                       hintStyle: primaryTextStyle(),
@@ -403,7 +386,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
                     onSubmitted: (s) {
                       sendClick();
                     },
-                    onChanged: onTyping, // Emit typing event when the user types
+                    onChanged: onTyping,
                   ).expand(),
                   IconButton(
                     icon: Icon(Icons.send, size: 25),
@@ -421,15 +404,14 @@ class EAChattingScreenState extends State<EAChattingScreen> {
   }
 }
 
-// Updated EAMessageModel to match API response
 class EAMessageModel {
-  int? senderId; // Matches EASender_id and EAReceiver_id
+  int? senderId;
   int? receiverId;
   String? msg;
   String? time;
-  String? senderUsername; // Added for API data
-  String? receiverUsername; // Added for API data
-  bool? seen; // Added for API data
+  String? senderUsername;
+  String? receiverUsername;
+  bool? seen;
 
   EAMessageModel({
     this.senderId,
@@ -442,7 +424,6 @@ class EAMessageModel {
   });
 }
 
-// Updated ChatMessageWidget1 for realistic display
 class ChatMessageWidget1 extends StatelessWidget {
   final bool isMe;
   final EAMessageModel data;

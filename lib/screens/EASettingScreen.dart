@@ -1,5 +1,6 @@
 import 'package:event_prokit/main.dart';
 import 'package:event_prokit/screens/About.dart';
+import 'package:event_prokit/screens/SignIn.dart';
 import 'package:event_prokit/screens/feedback.dart';
 import 'package:event_prokit/utils/EAColors.dart';
 import 'package:event_prokit/utils/EAConstants.dart';
@@ -8,6 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Added for SharedPreferences
 
 class EASettingScreen extends StatefulWidget {
   const EASettingScreen({Key? key}) : super(key: key);
@@ -148,7 +150,7 @@ class _EASettingScreenState extends State<EASettingScreen> {
     );
   }
 
-  // Logout Confirmation Dialog
+  // Logout Confirmation Dialog with SharedPreferences clearing
   void _showLogoutConfirmationDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -162,15 +164,27 @@ class _EASettingScreenState extends State<EASettingScreen> {
               },
               child: Text("Cancel"),
             ),
-            TextButton(
-              onPressed: () {
-                // Add your logout functionality here
-                Navigator.of(context).pop(); // Close the dialog
-                // Call the logout function (e.g., log out from app, clear user data, etc.)
-                // Example: appStore.logout();
-              },
-              child: Text("Logout"),
-            ),
+          TextButton(
+  onPressed: () async {
+    // Clear all SharedPreferences data
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear(); // Removes all stored key-value pairs
+    print("All SharedPreferences cleared");
+
+    Navigator.of(context).pop(); // Close the dialog
+
+    // Navigate to the SignIn screen and replace the current screen
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SignIn(),
+      ),
+    );
+  },
+  child: Text("Logout"),
+)
+
+
           ],
         );
       },

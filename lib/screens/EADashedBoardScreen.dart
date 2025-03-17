@@ -1,4 +1,5 @@
 import 'package:event_prokit/utils/EAConstants.dart';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -26,8 +27,6 @@ class EADashedBoardScreenState extends State<EADashedBoardScreen> {
   @override
   void initState() {
     super.initState();
-    init();
-
     _pages.add(EAHomeScreen(name: widget.name));
     _pages.add(EANewsList());
     _pages.add(EASearchScreen());
@@ -44,11 +43,26 @@ class EADashedBoardScreenState extends State<EADashedBoardScreen> {
       selectedItemColor: primaryColor1,
       unselectedItemColor: appStore.isDarkModeOn ? white : black,
       items: <BottomNavigationBarItem>[
-        BottomNavigationBarItem(icon: Icon(LineIcons.copy, size: 28, color: appStore.isDarkModeOn ? white : black), label: ''),
-        BottomNavigationBarItem(icon: Icon(LineIcons.handshake, size: 28, color: appStore.isDarkModeOn ? white : black), label: ''),
-        BottomNavigationBarItem(icon: Icon(LineIcons.info, size: 28, color: appStore.isDarkModeOn ? white : black), label: ''),
-        BottomNavigationBarItem(icon: Icon(LineIcons.user_friends, size: 28, color: appStore.isDarkModeOn ? white : black), label: ''),
-        BottomNavigationBarItem(icon: Icon(LineIcons.user, size: 28, color: appStore.isDarkModeOn ? white : black), label: ''),
+        BottomNavigationBarItem(
+          icon: Icon(LineIcons.home, size: 30, color: appStore.isDarkModeOn ? white : black),
+          label: '',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(LineIcons.handshake, size: 30, color: appStore.isDarkModeOn ? white : black),
+          label: '',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(LineIcons.map, size: 30, color: appStore.isDarkModeOn ? white : black),
+          label: '',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(LineIcons.comments, size: 30, color: appStore.isDarkModeOn ? white : black),
+          label: '',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(LineIcons.user, size: 30, color: appStore.isDarkModeOn ? white : black),
+          label: '',
+        ),
       ],
     );
   }
@@ -59,13 +73,6 @@ class EADashedBoardScreenState extends State<EADashedBoardScreen> {
     });
   }
 
-  Future<void> init() async {}
-
-  @override
-  void setState(fn) {
-    if (mounted) super.setState(fn);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,4 +81,14 @@ class EADashedBoardScreenState extends State<EADashedBoardScreen> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
+}
+
+void main() {
+  runApp(MaterialApp(
+    home: EADashedBoardScreen(),
+    theme: ThemeData(
+      primarySwatch: Colors.blue,
+      visualDensity: VisualDensity.adaptivePlatformDensity,
+    ),
+  ));
 }
