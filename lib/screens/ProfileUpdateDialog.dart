@@ -38,6 +38,7 @@ class EAHomeScreenState extends State<EAHomeScreen> {
     EATrendingTabScreen(),
     ListEvent()
   ];
+  
 
   @override
   void initState() {

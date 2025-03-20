@@ -141,26 +141,26 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
                       alignment: Alignment.bottomCenter,
                       children: [
                         commonCachedNetworkImage(events[i].image, height: 230, width: context.width(), fit: BoxFit.cover).cornerRadiusWithClipRRect(8),
-                        Container(
-                          alignment: Alignment.center,
-                          padding: EdgeInsets.all(8),
-                          decoration: boxDecorationWithRoundedCorners(
-                            backgroundColor: primaryColor1,
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(8),
-                              bottomRight: Radius.circular(8),
-                            ),
-                          ),
-                          child: events[i].hashtag.isEmpty
-                              ? SizedBox()
-                              : Row(
-                                  children: [
-                                    Icon(MaterialCommunityIcons.timer_sand, color: white),
-                                    10.width,
-                                    Text(events[i].hashtag, style: primaryTextStyle(color: white)),
-                                  ],
-                                ),
-                        ).visible(events[i].hashtag.isNotEmpty),
+                        // Container(
+                        //   alignment: Alignment.center,
+                        //   padding: EdgeInsets.all(8),
+                        //   decoration: boxDecorationWithRoundedCorners(
+                        //     backgroundColor: primaryColor1,
+                        //     borderRadius: BorderRadius.only(
+                        //       bottomLeft: Radius.circular(8),
+                        //       bottomRight: Radius.circular(8),
+                        //     ),
+                        //   ),
+                        //   child: events[i].hashtag.isEmpty
+                        //       ? SizedBox()
+                        //       : Row(
+                        //           children: [
+                        //             // Icon(MaterialCommunityIcons.timer_sand, color: white),
+                        //             10.width,
+                        //             Text("", style: primaryTextStyle(color: white)),
+                        //           ],
+                        //         ),
+                        // ).visible(events[i].hashtag.isNotEmpty),
                       ],
                     ).paddingAll(16),
                     Column(

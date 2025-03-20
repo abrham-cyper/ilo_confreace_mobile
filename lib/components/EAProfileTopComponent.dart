@@ -39,52 +39,52 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
   }
 
   Future<void> fetchUserData() async {
-  final prefs = await SharedPreferences.getInstance();
-  final accessToken = prefs.getString('accessToken');
-  final refreshToken = prefs.getString('refreshToken');
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('accessToken');
+    final refreshToken = prefs.getString('refreshToken');
 
-  if (accessToken == null) {
-    toast("User not logged in");
-    return;
-  }
-
-  try {
-    final response = await http.get(
-      Uri.parse('${AppConstants.baseUrl}/api/user/me'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final userData = data['data'];
-
-      setState(() {
-        fullname = userData['fullname'] ?? 'Unknown user';
-        country = userData['country'] ?? 'Country';
-        bio = userData['bio'] ?? '';
-        profilePic = userData['profilePic'] ??
-            'https://i.pinimg.com/736x/47/3e/84/473e84e35274f087695236414ff8df3b.jpg';
-        userId = userData['_id']; // Store the user ID
-        qrData = userId; // Set QR code data to only the userId
-      });
-    } else if (response.statusCode == 401) {
-      final newAccessToken = await refreshAccessToken(refreshToken);
-      if (newAccessToken != null) {
-        await fetchUserData();
-      } else {
-        toast("Session expired. Please log in again.");
-      }
-    } else {
-      final error = jsonDecode(response.body);
-      toast("Failed to fetch user data: ${error['error']}");
+    if (accessToken == null) {
+      toast("User not logged in");
+      return;
     }
-  } catch (e) {
-    toast("Error fetching user data: $e");
+
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConstants.baseUrl}/api/user/me'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final userData = data['data'];
+
+        setState(() {
+          fullname = userData['fullname'] ?? 'Unknown user';
+          country = userData['country'] ?? 'Country';
+          bio = userData['bio'] ?? '';
+          profilePic = userData['profilePic'] ??
+              'https://i.pinimg.com/736x/47/3e/84/473e84e35274f087695236414ff8df3b.jpg';
+          userId = userData['_id']; // Store the user ID
+          qrData = userId; // Set QR code data to only the userId
+        });
+      } else if (response.statusCode == 401) {
+        final newAccessToken = await refreshAccessToken(refreshToken);
+        if (newAccessToken != null) {
+          await fetchUserData();
+        } else {
+          toast("Session expired. Please log in again.");
+        }
+      } else {
+        final error = jsonDecode(response.body);
+        toast("Failed to fetch user data: ${error['error']}");
+      }
+    } catch (e) {
+      toast("Error fetching user data: $e");
+    }
   }
-}
 
   // Function to refresh the access token using the refresh token
   Future<String?> refreshAccessToken(String? refreshToken) async {
@@ -92,7 +92,7 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
 
     try {
       final response = await http.post(
-        Uri.parse('${AppConstants.baseUrl}/api/user/refreshToken'), // Adjust the endpoint as needed
+        Uri.parse('${AppConstants.baseUrl}/api/user/refreshToken'),
         headers: {
           'Content-Type': 'application/json',
         },
@@ -144,10 +144,6 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  "Scan QR Code",
-                  style: boldTextStyle(size: 20),
-                ),
                 16.height,
                 QrImageView(
                   data: qrData!,
@@ -230,43 +226,75 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    36.height,
-                    Text(fullname ?? 'Abrham', style: boldTextStyle()),
-                    8.height,
-                    Text(country ?? 'Ethiopia, Addis Abebe', style: primaryTextStyle()),
-                    8.height,
-                    GestureDetector(
-                      onTap: () => _showQrCodePopup(context),
-                      child: Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                    36.height, // Space for the profile picture
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Center(
+                            child: Text(
+                              fullname ?? 'Abrham',
+                              style: boldTextStyle(size: 20, weight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            QrImageView(
-                              data: qrData ?? "${AppConstants.baseUrl}/api/user/default", // Fallback QR data
+                        GestureDetector(
+                          onTap: () => _showQrCodePopup(context),
+                          child: Container(
+                            padding: EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  primaryColor1.withOpacity(0.8),
+                                  primaryColor1.withOpacity(0.4),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: primaryColor1.withOpacity(0.5),
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: QrImageView(
+                              data: qrData ?? "${AppConstants.baseUrl}/api/user/default",
                               version: QrVersions.auto,
-                              size: 40.0,
+                              size: 50.0,
                               gapless: false,
-                              foregroundColor: primaryColor1,
+                              foregroundColor: Colors.white,
+                              embeddedImage: AssetImage('images/app_icon.png'),
+                              embeddedImageStyle: QrEmbeddedImageStyle(
+                                size: Size(12, 12),
+                              ),
+                              eyeStyle: QrEyeStyle(
+                                eyeShape: QrEyeShape.circle,
+                                color: Colors.white,
+                              ),
+                              dataModuleStyle: QrDataModuleStyle(
+                                dataModuleShape: QrDataModuleShape.circle,
+                                color: Colors.white,
+                              ),
                             ),
-                            8.width,
-                            Text(
-                              "Scan QR",
-                              style: primaryTextStyle(color: primaryColor1),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    4.height,
+                    8.height,
+                    Text(
+                      country ?? 'Ethiopia, Addis Abebe',
+                      style: primaryTextStyle(color: Colors.grey, size: 14),
+                    ),
+                    8.height,
                     Row(
                       children: [
                         Text(
                           bio?.isNotEmpty == true ? bio! : hashTag,
-                          style: primaryTextStyle(),
+                          style: primaryTextStyle(size: 14),
                           maxLines: isExpand ? null : 1,
                           overflow: isExpand ? null : TextOverflow.ellipsis,
                         ).expand(),
@@ -276,45 +304,7 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                       GestureDetector(
-  onTap: () {
-    // Navigate to EAMayBEYouKnowScreen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EAExplorerScreen(),
-      ),
-    );
-  },
-  child: Icon(
-    Icons.message,
-    color: primaryColor1,
-    size: 24,
-  ),
-),
-
-                        16.width,
-                        GestureDetector(
-                          onTap: () {
-                            // Handle share icon tap
-                          },
-                          child: Icon(
-                            Icons.share,
-                            color: primaryColor1,
-                            size: 24,
-                          ),
-                        ),
-                        16.width,
-                        GestureDetector(
-                          onTap: () {
-                            toast("Favorite icon tapped");
-                          },
-                          child: Icon(
-                            Icons.favorite_border,
-                            color: primaryColor1,
-                            size: 24,
-                          ),
-                        ),
+                        // Add any additional buttons or widgets here if needed
                       ],
                     ),
                     36.height,
@@ -326,7 +316,7 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
               top: 130,
               child: commonCachedNetworkImage(
                 profilePic ??
-                    'https://i.pinimg.com/736x/47/3e/84/473e84e35274f087695236414ff8df3b.jpg', // Updated fallback image
+                    'https://i.pinimg.com/736x/47/3e/84/473e84e35274f087695236414ff8df3b.jpg',
                 height: 100,
                 width: 100,
                 fit: BoxFit.cover,
@@ -340,6 +330,7 @@ class _EAProfileTopComponentState extends State<EAProfileTopComponent> {
                 child: Container(
                   padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(

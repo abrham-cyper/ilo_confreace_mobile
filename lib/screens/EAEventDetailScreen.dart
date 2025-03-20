@@ -224,15 +224,12 @@ class _EAEventDetailScreenState extends State<EAEventDetailScreen> {
                     widget.about ?? 'No description available',
                     style: primaryTextStyle(),
                   ),
-                  Text(
-                    widget.attending ?? '0 attending',
-                    style: primaryTextStyle(),
-                  ),
+              
                   Row(
                     children: [
-                      Text("Detail", style: primaryTextStyle(color: primaryColor1)),
+                      // Text("Detail", style: primaryTextStyle(color: primaryColor1)),
                       4.width,
-                      Icon(Icons.arrow_forward_ios_outlined, size: 14, color: primaryColor1),
+                      // Icon(Icons.arrow_forward_ios_outlined, size: 14, color: primaryColor1),
                     ],
                   ),
                 ],

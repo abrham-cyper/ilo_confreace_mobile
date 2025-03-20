@@ -4,13 +4,12 @@ import 'package:event_prokit/screens/SignIn.dart';
 import 'package:event_prokit/screens/Signup.dart';
 import 'package:event_prokit/utils/EAapp_widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:event_prokit/screens/EADashedBoardScreen.dart';
 import 'package:event_prokit/utils/EAColors.dart';
 import 'package:event_prokit/utils/EADataProvider.dart';
 import 'package:event_prokit/screens/EASelectCityScreen.dart';
-import 'package:google_sign_in/google_sign_in.dart'; // Add this import
+import 'package:google_sign_in/google_sign_in.dart';
 
 class EAWalkThroughScreen extends StatefulWidget {
   const EAWalkThroughScreen({Key? key}) : super(key: key);
@@ -22,7 +21,7 @@ class EAWalkThroughScreen extends StatefulWidget {
 class _EAWalkThroughScreenState extends State<EAWalkThroughScreen> {
   PageController pageController = PageController(initialPage: 0);
   int currentIndexPage = 0;
-  
+
   // Initialize GoogleSignIn
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
@@ -33,25 +32,14 @@ class _EAWalkThroughScreenState extends State<EAWalkThroughScreen> {
 
   Future<void> _handleGoogleSignIn() async {
     try {
-      // Attempt to sign in with Google
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
       if (googleUser != null) {
-        // Successfully signed in
         final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        
-        // You can access user details like this:
         print('User: ${googleUser.displayName}');
         print('Email: ${googleUser.email}');
         print('Photo URL: ${googleUser.photoUrl}');
-      
-
-        
-        
-        // Navigate to next screen
         EASelectCityScreen().launch(context);
       } else {
-        // User cancelled the sign-in
         toast('Sign in cancelled');
       }
     } catch (error) {
@@ -76,69 +64,66 @@ class _EAWalkThroughScreenState extends State<EAWalkThroughScreen> {
                     controller: pageController,
                     itemCount: walkThroughList.length,
                     itemBuilder: (context, i) {
-                      return commonCachedNetworkImage(walkThroughList[i].image!, fit: BoxFit.cover);
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          commonCachedNetworkImage(
+                            walkThroughList[i].image!,
+                            fit: BoxFit.cover,
+                          ),
+                          // Gradient overlay for shadow effect on background image
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.black.withOpacity(0.8),
+                                  Colors.black.withOpacity(0.4),
+                                  Colors.transparent,
+                                ],
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
                     },
                     onPageChanged: (value) {
                       setState(() => currentIndexPage = value);
                     },
                   ),
                 ),
-                // Positioned(
-                //   right: 20,
-                //   top: 40,
-                //   child: Text('Skip', style: primaryTextStyle(color: primaryColor1)).onTap(() {
-                //     EADashedBoardScreen().launch(context);
-                //   }),
-                // ),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   mainAxisSize: MainAxisSize.max,
                   children: [
-                    Text(walkThroughList[currentIndexPage].title!, style: boldTextStyle(size: 24, color: white)),
+                    Text(
+                      walkThroughList[currentIndexPage].title!,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 1.2,
+                        fontFamily: 'Poppins', // Modern font (ensure it's in pubspec.yaml)
+                      ),
+                    ),
                     16.height,
-                    Text(walkThroughList[currentIndexPage].subtitle!, style: primaryTextStyle(color: white), textAlign: TextAlign.center),
+                    Text(
+                      walkThroughList[currentIndexPage].subtitle!,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                        height: 1.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                     32.height,
-                    DotIndicator(pageController: pageController, pages: walkThroughList, indicatorColor: white),
-                    16.height,
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AppButton(
-                          shapeBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Fontisto.facebook, color: white),
-                              8.width,
-                              Text('Facebook', style: primaryTextStyle(color: white)),
-                            ],
-                          ),
-                          elevation: 0.0,
-                          width: 150,
-                          padding: EdgeInsets.all(8),
-                          color: facebook,
-                          onTap: () {
-                            EASelectCityScreen().launch(context);
-                          },
-                        ),
-                        16.width,
-                        AppButton(
-                          shapeBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Fontisto.google, color: white),
-                              8.width,
-                              Text('Google', style: primaryTextStyle(color: white)),
-                            ],
-                          ),
-                          elevation: 0.0,
-                          width: 150,
-                          padding: EdgeInsets.all(8),
-                          color: Colors.red,
-                          onTap: _handleGoogleSignIn, // Updated onTap handler
-                        ),
-                      ],
+                    DotIndicator(
+                      pageController: pageController,
+                      pages: walkThroughList,
+                      indicatorColor: white,
                     ),
                     16.height,
                     AppButton(

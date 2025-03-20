@@ -29,7 +29,7 @@ class EADashedBoardScreenState extends State<EADashedBoardScreen> {
     super.initState();
     _pages.add(EAHomeScreen(name: widget.name));
     _pages.add(EANewsList());
-    _pages.add(EASearchScreen());
+    // _pages.add(EASearchScreen());
     _pages.add(EAPeopleScreen());
     _pages.add(EAProfileScreen());
   }
@@ -51,10 +51,10 @@ class EADashedBoardScreenState extends State<EADashedBoardScreen> {
           icon: Icon(LineIcons.handshake, size: 30, color: appStore.isDarkModeOn ? white : black),
           label: '',
         ),
-        BottomNavigationBarItem(
-          icon: Icon(LineIcons.map, size: 30, color: appStore.isDarkModeOn ? white : black),
-          label: '',
-        ),
+        // BottomNavigationBarItem(
+        //   icon: Icon(LineIcons.map, size: 30, color: appStore.isDarkModeOn ? white : black),
+        //   label: '',
+        // ),
         BottomNavigationBarItem(
           icon: Icon(LineIcons.comments, size: 30, color: appStore.isDarkModeOn ? white : black),
           label: '',

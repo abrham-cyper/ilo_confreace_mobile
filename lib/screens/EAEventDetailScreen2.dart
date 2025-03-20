@@ -47,7 +47,7 @@ class _EAEventDetailScreen2State extends State<EAEventDetailScreen2> {
   Future<Map<String, String?>> _getIdsFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final eventId = prefs.getString('event_id');
-    final userId = prefs.getString('user_id');
+    final userId = prefs.getString('userid');
     print("Retrieved event_id: $eventId, user_id: $userId");
     return {'eventId': eventId, 'userId': userId};
   }

@@ -23,12 +23,12 @@ class EASearchScreen extends StatefulWidget {
 
 class EASearchScreenState extends State<EASearchScreen> {
   final _kTabs = <Tab>[
-    Tab(text: 'Vote'),
+    // Tab(text: 'Vote'),
     Tab(text: 'Floor Map'),
   ];
 
   final _kTabPages = <Widget>[
-    Vote(),
+    // Vote(),
     Floormap(),
   ];
 

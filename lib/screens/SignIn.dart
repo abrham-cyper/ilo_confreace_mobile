@@ -96,13 +96,22 @@ Future<void> _storeUserData(String email, String accessToken, String refreshToke
       String email = emailController.text.trim();
       String password = passwordController.text.trim();
 
-      if (await authenticateUser(email, password)) {
-        toast('Login Successful');
-        Navigator.pushReplacement(
-          context,
-            MaterialPageRoute(builder: (context) => EADashedBoardScreen()),
-        );
-      }
+     if (await authenticateUser(email, password)) {
+  toast('Login Successful');
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => EADashedBoardScreen()),
+  );
+}
+if (await authenticateUser(email, password)) {
+  toast('Login Successful');
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => EADashedBoardScreen()),
+    (route) => false, // This removes all previous routes
+  );
+}
+
 
       setState(() => isLoading = false);
     }
@@ -123,11 +132,11 @@ Future<void> _storeUserData(String email, String accessToken, String refreshToke
                   // Logo at the top
                   Image.asset(
                     'images/logo.png',
-                    height: 150,
-                    width: 150,
+                    height: 250,
+                    width: 250,
                     fit: BoxFit.cover,
                   ),
-                  20.height,
+                 
                   // Welcome text
                   Text(
                     "Welcome to 20th ILO Regional Conference",

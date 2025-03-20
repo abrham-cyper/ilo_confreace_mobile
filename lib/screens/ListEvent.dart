@@ -1,84 +1,140 @@
-import 'package:event_prokit/utils/EAColors.dart';
+import 'dart:convert';
+import 'package:event_prokit/screens/AgendaScreen.dart';
+import 'package:event_prokit/screens/BadgeBottomSheet.dart';
+import 'package:event_prokit/screens/CongressPartners.dart';
+import 'package:event_prokit/screens/EventDetailPage.dart';
+import 'package:event_prokit/screens/AgendaPage.dart';
+import 'package:event_prokit/screens/Floormap.dart';
+import 'package:event_prokit/screens/Mobility.dart';
+import 'package:event_prokit/screens/HighLevelProgramPage.dart';
+import 'package:event_prokit/screens/MediaPage.dart';
+import 'package:event_prokit/screens/Program.dart';
+import 'package:event_prokit/screens/Speakers.dart';
+import 'package:event_prokit/screens/SupportCenter.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
-class ListEvent extends StatelessWidget {
-  // Conference-themed event items with concise data
-  final List<Map<String, dynamic>> eventItems = [
-    {
-      'title': 'Programme',
-      'icon': Icons.calendar_today,
-      'color': Colors.blue,
-    },
-    {
-      'title': 'Agenda',
-      'icon': Icons.event,
-      'color': Colors.green,
-    },
-    {
-      'title': 'Keynotes',
-      'icon': Icons.star,
-      'color': Colors.purple,
-    },
-    {
-      'title': 'Speakers',
-      'icon': Icons.mic,
-      'color': Colors.orange,
-    },
-    {
-      'title': 'Tech',
-      'icon': Icons.code,
-      'color': Colors.teal,
-    },
-    {
-      'title': 'Media',
-      'icon': Icons.photo_camera,
-      'color': Colors.pink,
-    },
-    {
-      'title': 'Exhibits',
-      'icon': Icons.store,
-      'color': Colors.red,
-    },
-    {
-      'title': 'Demos',
-      'icon': Icons.play_circle_filled,
-      'color': Colors.cyan,
-    },
-    {
-      'title': 'Guide',
-      'icon': Icons.help,
-      'color': Colors.indigo,
-    },
-    {
-      'title': 'Support',
-      'icon': Icons.support_agent,
-      'color': Colors.grey,
-    },
-    {
-      'title': 'Attendees',
-      'icon': Icons.people,
-      'color': Colors.amber,
-    },
-    {
-      'title': 'Workshops',
-      'icon': Icons.build,
-      'color': Colors.deepPurple,
-    },
-    {
-      'title': 'Networking',
-      'icon': Icons.connect_without_contact,
-      'color': Colors.deepOrange,
-    },
-    {
-      'title': 'Map',
-      'icon': Icons.map,
-      'color': Colors.blueGrey,
-    },
-  ];
+class ListEvent extends StatefulWidget {
+  @override
+  _ListEventState createState() => _ListEventState();
+}
+
+class _ListEventState extends State<ListEvent> {
+  List<Map<String, dynamic>> eventItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchEventItems();
+  }
+
+  Future<void> fetchEventItems() async {
+    final url = 'http://49.13.202.68:5001/api/cards';
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          eventItems = (data['data'] as List).map((item) {
+            return {
+              'title': item['name'],
+              'icon': _getIconForEvent(item['name']),
+              'color': _getColorForEvent(item['name']),
+              '_id': item['_id'],
+            };
+          }).toList();
+          // Manually add "My Badge" if not in API
+          if (!eventItems.any((item) => item['title'] == 'My Badge')) {
+            eventItems.add({
+              'title': 'My Badge',
+              'icon': Icons.badge,
+              'color': Colors.teal,
+              '_id': 'my_badge_id',
+            });
+          }
+        });
+      } else {
+        throw Exception('Failed to load events');
+      }
+    } catch (error) {
+      print('Error fetching events: $error');
+    }
+  }
+
+  IconData _getIconForEvent(String name) {
+    switch (name) {
+      case 'Programme Overview':
+        return Icons.calendar_today;
+      case 'Agenda':
+        return Icons.schedule;
+      case 'High Level Program':
+        return Icons.star;
+      case 'Speakers':
+        return Icons.mic;
+      case 'Media':
+        return Icons.photo;
+      case 'Mobility':
+        return Icons.store;
+      case 'Demos':
+        return Icons.play_circle_outline;
+      case 'Guide':
+        return Icons.help;
+      case 'Support':
+        return Icons.support_agent;
+      case 'Attendees':
+        return Icons.people;
+      case 'Workshops':
+        return Icons.build;
+      case 'Networking':
+        return Icons.connect_without_contact;
+      case 'Map':
+        return Icons.map;
+      case 'My Badge':
+        return Icons.badge;
+      default:
+        return Icons.event;
+    }
+  }
+
+  Color _getColorForEvent(String name) {
+    switch (name) {
+      case 'Programme':
+        return Colors.blue;
+      case 'Agenda':
+        return Colors.green;
+      case 'High Level Program':
+        return Colors.purple;
+      case 'Speakers':
+        return Colors.orange;
+      case 'Media':
+        return Colors.pink;
+      case 'Mobility':
+        return Colors.red;
+      case 'Demos':
+        return Colors.cyan;
+      case 'Guide':
+        return Colors.indigo;
+      case 'Support':
+        return Colors.grey;
+      case 'Attendees':
+        return Colors.amber;
+      case 'Workshops':
+        return Colors.deepPurple;
+      case 'Networking':
+        return Colors.deepOrange;
+      case 'Map':
+        return Colors.blueGrey;
+      case 'My Badge':
+        return Colors.teal;
+      default:
+        return Colors.blueAccent;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Group items into pairs
     List<List<Map<String, dynamic>>> pairedItems = [];
     for (int i = 0; i < eventItems.length; i += 2) {
       pairedItems.add(
@@ -88,14 +144,13 @@ class ListEvent extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: pairedItems.map((pair) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12.0), // Space between rows
+                padding: const EdgeInsets.only(bottom: 12.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -104,29 +159,29 @@ class ListEvent extends StatelessWidget {
                         title: pair[0]['title'],
                         icon: pair[0]['icon'],
                         color: pair[0]['color'],
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('${pair[0]['title']} pressed')),
-                          );
+                        onPressed: () async {
+                          SharedPreferences prefs = await SharedPreferences.getInstance();
+                          await prefs.setString('event_id', pair[0]['_id']);
+                          _navigateToPage(context, pair[0]['title']);
                         },
                       ),
                     ),
-                    SizedBox(width: 12), // Space between cards in a pair
+                    const SizedBox(width: 12),
                     if (pair.length > 1)
                       Expanded(
                         child: EventCard(
                           title: pair[1]['title'],
                           icon: pair[1]['icon'],
                           color: pair[1]['color'],
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('${pair[1]['title']} pressed')),
-                            );
+                          onPressed: () async {
+                            SharedPreferences prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('event_id', pair[1]['_id']);
+                            _navigateToPage(context, pair[1]['title']);
                           },
                         ),
                       )
                     else
-                      Expanded(child: SizedBox()), // Placeholder for odd number
+                      const Expanded(child: SizedBox()),
                   ],
                 ),
               );
@@ -136,10 +191,63 @@ class ListEvent extends StatelessWidget {
       ),
     );
   }
+
+  void _navigateToPage(BuildContext context, String title) {
+    if (title == 'My Badge') {
+      _showBadgeBottomSheet(context);
+    } else {
+      Widget page;
+      switch (title) {
+        case 'Programme overview':
+          page = Program();
+          break;
+          case 'Floormap':
+          page = Floormap();
+          break;
+          
+         case 'Agenda':
+          page = AgendaScreen();
+          break;
+        case 'High Level Program':
+          page = HighLevelProgramPage();
+          break;
+        case 'Speakers':
+          page = SpeakersScreen();
+          break;
+        case 'Media':
+          page = ConferenceFeedScreen();
+          break;
+        case 'Mobility':
+          page = Mobility();
+          break;
+        case 'Support':
+          page = SupportCenterApp();
+          break;
+        case 'Congress Partners':
+          page = CongressPartnersScreen();
+          break;
+        default:
+          page = EventDetailPage();
+          break;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => page),
+      );
+    }
+  }
+
+  void _showBadgeBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BadgeBottomSheet(),
+    );
+  }
 }
 
-// Custom EventCard widget for a sleek, compact design
-class EventCard extends StatefulWidget {
+class EventCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final Color color;
@@ -153,152 +261,66 @@ class EventCard extends StatefulWidget {
   });
 
   @override
-  _EventCardState createState() => _EventCardState();
-}
-
-class _EventCardState extends State<EventCard> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  bool _isHovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 150),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) {
-        setState(() => _isHovered = true);
-        _animationController.forward();
-      },
-      onTapUp: (_) {
-        setState(() => _isHovered = false);
-        _animationController.reverse();
-        widget.onPressed();
-      },
-      onTapCancel: () {
-        setState(() => _isHovered = false);
-        _animationController.reverse();
-      },
-      child: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Container(
-              height: 100, // Compact height
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    widget.color.withOpacity(0.9),
-                    widget.color.withOpacity(0.6),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.color.withOpacity(0.4),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Stack(
-                children: [
-                  // Subtle background overlay
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withOpacity(0.1),
-                            Colors.transparent,
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      children: [
-                        // Icon
-                        Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            widget.icon,
-                            size: 28,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(width: 12),
-                        // Title
-                        Expanded(
-                          child: Text(
-                            widget.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  offset: Offset(1, 1),
-                                  blurRadius: 2,
-                                ),
-                              ],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Ripple effect
-                  Positioned.fill(
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        splashColor: Colors.white.withOpacity(0.3),
-                        highlightColor: Colors.white.withOpacity(0.1),
-                        onTap: () {}, // Handled by GestureDetector
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+      onTap: onPressed,
+      child: Container(
+        height: 120,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.9), color.withOpacity(0.6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.4),
+              blurRadius: 8,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 28,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.3),
+                        offset: const Offset(1, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

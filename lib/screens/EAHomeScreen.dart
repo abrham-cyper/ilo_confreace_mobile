@@ -29,14 +29,15 @@ class EAHomeScreen extends StatefulWidget {
 class EAHomeScreenState extends State<EAHomeScreen> {
   final _kTabs = <Tab>[
     Tab(text: 'FOR YOU'),
+    Tab(text: 'Events'),  
     Tab(text: 'Events feeds'),
-    Tab(text: 'Events'),
+   
   ];
 
   final _kTabPages = <Widget>[
     EAForYouTabScreen(),
-    EATrendingTabScreen(),
-    ListEvent()
+    ListEvent(),
+    EATrendingTabScreen()
   ];
 
   @override

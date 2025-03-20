@@ -47,12 +47,12 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
 
     socket.on('newMessage', (data) {
       print('New message received: $data');
-      fetchData(); // Refresh data when a new message arrives
+      fetchData();
     });
 
     socket.on('messagesSeen', (data) {
       print('Messages seen: $data');
-      fetchData(); // Refresh data when messages are seen
+      fetchData();
     });
   }
 
@@ -61,7 +61,6 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
     print('Joined conversation: $conversationId');
   }
 
-  // Function to fetch fullname by userId
   Future<String?> fetchFullname(String userId) async {
     final url = 'http://49.13.202.68:5001/api/user/userid/$userId';
     try {
@@ -79,7 +78,6 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
     }
   }
 
-  // Function to fetch the last message for a conversationId
   Future<String?> fetchLastMessage(String conversationId) async {
     final url = 'http://49.13.202.68:4000/api/messages/conversation/$conversationId';
     try {
@@ -87,7 +85,6 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> messages = jsonDecode(response.body);
         if (messages.isNotEmpty) {
-          // The last message in the array is the most recent based on your API response
           final lastMessage = messages.last;
           return lastMessage['message'] ?? 'No message content';
         }
@@ -127,22 +124,31 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
         final List<dynamic> jsonData = jsonDecode(response.body);
         print('Messages list response: $jsonData');
 
-        // Fetch fullnames and last messages for each item
-        List<EAForYouModel> fetchedList = [];
-        for (var item in jsonData) {
+        // Prepare futures for parallel execution
+        List<Future<EAForYouModel>> futures = jsonData.map((item) async {
           String? receiverUserId = item['receiverUsername'] as String?;
           String? conversationId = item['conversationId'] as String?;
-          String? fullname = receiverUserId != null ? await fetchFullname(receiverUserId) : 'Unknown';
-          String? lastMessage = conversationId != null ? await fetchLastMessage(conversationId) : 'No messages yet';
 
-          fetchedList.add(EAForYouModel(
+          // Fetch fullname and last message concurrently
+          final results = await Future.wait([
+            fetchFullname(receiverUserId ?? ''),
+            fetchLastMessage(conversationId ?? ''),
+          ]);
+
+          String fullname = results[0] ?? 'Unknown';
+          String lastMessage = results[1] ?? 'No messages yet';
+
+          return EAForYouModel(
             name: fullname,
             lastMessage: lastMessage,
-            image: 'https://randomuser.me/api/portraits/men/1.jpg', // Placeholder image
+            image: 'https://randomuser.me/api/portraits/men/1.jpg',
             fev: true,
             conversationId: conversationId,
-          ));
-        }
+          );
+        }).toList();
+
+        // Wait for all futures to complete
+        List<EAForYouModel> fetchedList = await Future.wait(futures);
 
         setState(() {
           list = fetchedList;
@@ -193,7 +199,6 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       body: isLoading
           ? Center(child: CircularProgressIndicator(color: primaryColor1))
           : hasError

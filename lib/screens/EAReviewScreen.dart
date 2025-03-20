@@ -44,7 +44,7 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
   Future<Map<String, String?>> _getIdsFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
     final eventId = prefs.getString('event_id');
-    final userId = prefs.getString('user_id');
+    final userId = prefs.getString('userid');
     print("Retrieved event_id: $eventId, user_id: $userId");
     return {'eventId': eventId, 'userId': userId};
   }
@@ -181,7 +181,7 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: getAppBar(
-        "Reviews 2",
+        "Reviews",
         backWidget: Icon(Icons.close, color: white).onTap(() {
           finish(context);
         }),

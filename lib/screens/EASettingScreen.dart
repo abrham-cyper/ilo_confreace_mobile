@@ -28,6 +28,8 @@ class _EASettingScreenState extends State<EASettingScreen> {
     setStatusBarColor(primaryColor1);
   }
 
+   String selectedLanguage = "English"; // Default language
+
   @override
   Widget build(BuildContext context) {
     return Observer(
@@ -75,6 +77,45 @@ class _EASettingScreenState extends State<EASettingScreen> {
                   appStore.toggleDarkMode();
                 },
               ),
+              Container(
+  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(10),
+  ),
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Row(
+        children: [
+          Icon(LineIcons.language, size: 30),
+          SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Language", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(selectedLanguage, style: TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ],
+      ),
+      DropdownButton<String>(
+        value: selectedLanguage,
+        icon: Icon(Icons.arrow_drop_down, color: Colors.grey.withOpacity(0.7)),
+        underline: SizedBox(),
+        items: ["English", "French", "Spanish", "German"]
+            .map((lang) => DropdownMenuItem(value: lang, child: Text(lang)))
+            .toList(),
+        onChanged: (String? newValue) {
+          setState(() => selectedLanguage = newValue!);
+        },
+      ),
+    ],
+  ),
+)
+,
+
+
               SettingItemWidget(
                 title: "Change Email",
                 leading: Icon(LineIcons.envelope, size: 30),

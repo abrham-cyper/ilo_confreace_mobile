@@ -102,9 +102,9 @@ class EAForYouTabScreenState extends State<EAForYouTabScreen> {
                                     ? SizedBox()
                                     : Row(
                                         children: [
-                                          Icon(MaterialCommunityIcons.timer_sand, color: white),
+                                          // Icon(MaterialCommunityIcons.timer_sand, color: white),
                                           10.width,
-                                          Text(forYouList[i].time.toString(), style: primaryTextStyle(color: white)),
+                                          Text("", style: primaryTextStyle(color: white)),
                                         ],
                                       ),
                               ).visible(forYouList[i].time != null),
