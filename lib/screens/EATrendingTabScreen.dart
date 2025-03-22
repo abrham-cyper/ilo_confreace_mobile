@@ -95,23 +95,38 @@ class EATrendingTabScreenState extends State<EATrendingTabScreen> {
     fetchEvents();
   }
 
-  Future<void> fetchEvents() async {
-    try {
-      final response = await http.get(Uri.parse('${AppConstants.baseUrl}/api/news'));
+ Future<void> fetchEvents() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    String? accessToken = prefs.getString('accessToken');
 
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        setState(() {
-          events = data.map((item) => Event.fromJson(item)).toList();
-        });
-      } else {
-        throw Exception('Failed to load events: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching events: $e');
-      toast('Failed to load events'); // Optional: Show error to user
+    if (accessToken == null) {
+      print('No access token found. User may not be logged in.');
+      toast('Please log in to view events');
+      return;
     }
+
+    final response = await http.get(
+      Uri.parse('${AppConstants.baseUrl}/api/news'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      setState(() {
+        events = data.map((item) => Event.fromJson(item)).toList();
+      });
+    } else {
+      throw Exception('Failed to load events: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error fetching events: $e');
+    toast('Failed to load events'); // Optional: Show error to user
   }
+}
 
   // Function to save event ID to SharedPreferences
   Future<void> _saveEventId(String eventId) async {

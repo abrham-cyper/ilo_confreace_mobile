@@ -1,3 +1,4 @@
+import 'package:event_prokit/main.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:animate_do/animate_do.dart';
@@ -11,13 +12,13 @@ class ConferenceFeedScreen extends StatelessWidget {
     "title": " 2025 ILO ",
     "posts": [
       {
-        "mediaUrl": "https://example.com/post1.jpg",
+        "mediaUrl": "https://plus.unsplash.com/premium_photo-1661774861781-e540fbc29330?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8bWVldGluZ3xlbnwwfHwwfHx8MA%3D%3D",
         "mediaType": "image",
         "description": "Excited to announce the 2025 ILO Regional Conference! Discussing the future of work in the digital age. #ILORegional2025",
         "heightFactor": 1.2
       },
       {
-        "mediaUrl": "https://v1.pinimg.com/videos/mc/expMp4/44/27/99/442799477c10f469cb01832bf304e1bb_t3.mp4",
+        "mediaUrl": "https://images.pexels.com/photos/955395/pexels-photo-955395.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
         "mediaType": "video",
         "description": "Highlights from the climate resilience panel! The insights on green jobs were inspiring. 🌱 #ILORegional2025",
         "heightFactor": 1.5
@@ -58,7 +59,10 @@ class ConferenceFeedScreen extends StatelessWidget {
     final List<dynamic> posts = feedData['posts'];
 
     return Scaffold(
-      backgroundColor: Color(0xFFF5F6FA), // Light background
+    
+        backgroundColor: appStore.isDarkModeOn
+            ? Colors.grey[900] // Dark mode background
+            : Colors.grey[100], // Light mode background
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -354,7 +358,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF5F6FA),
+    backgroundColor: appStore.isDarkModeOn
+            ? Colors.grey[900] // Dark mode background
+            : Colors.grey[100], // Light mode background
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(

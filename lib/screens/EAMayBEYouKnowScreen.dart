@@ -18,7 +18,7 @@ class EAMayBEYouKnowScreen extends StatefulWidget {
 
 class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
   List<EAForYouModel> list = [];
-  bool isLoading = true;
+  bool isLoading = false; // Changed to false initially
   bool hasError = false;
   late IO.Socket socket;
 
@@ -26,7 +26,7 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
   void initState() {
     super.initState();
     initializeSocket();
-    fetchData();
+    loadData(); // Changed from fetchData() to loadData()
   }
 
   void initializeSocket() {
@@ -47,12 +47,12 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
 
     socket.on('newMessage', (data) {
       print('New message received: $data');
-      fetchData();
+      fetchData(); // Refresh data when new message arrives
     });
 
     socket.on('messagesSeen', (data) {
       print('Messages seen: $data');
-      fetchData();
+      fetchData(); // Refresh data when messages are seen
     });
   }
 
@@ -97,6 +97,34 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
     }
   }
 
+  // Load data from cache or fetch from API
+  Future<void> loadData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedData = prefs.getString('cachedUserList');
+
+    if (cachedData != null) {
+      // Load from cache
+      final List<dynamic> jsonData = jsonDecode(cachedData);
+      setState(() {
+        list = jsonData.map((json) => EAForYouModel(
+          name: json['name'],
+          lastMessage: json['lastMessage'],
+          image: json['image'],
+          fev: json['fev'],
+          conversationId: json['conversationId'],
+        )).toList();
+        isLoading = false;
+        hasError = false;
+      });
+      // Fetch fresh data in background
+      fetchData();
+    } else {
+      // No cache, fetch directly
+      fetchData();
+    }
+  }
+
+  // Fetch data from API and save to cache
   Future<void> fetchData() async {
     setState(() {
       isLoading = true;
@@ -124,12 +152,10 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
         final List<dynamic> jsonData = jsonDecode(response.body);
         print('Messages list response: $jsonData');
 
-        // Prepare futures for parallel execution
         List<Future<EAForYouModel>> futures = jsonData.map((item) async {
           String? receiverUserId = item['receiverUsername'] as String?;
           String? conversationId = item['conversationId'] as String?;
 
-          // Fetch fullname and last message concurrently
           final results = await Future.wait([
             fetchFullname(receiverUserId ?? ''),
             fetchLastMessage(conversationId ?? ''),
@@ -147,8 +173,17 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
           );
         }).toList();
 
-        // Wait for all futures to complete
         List<EAForYouModel> fetchedList = await Future.wait(futures);
+
+        // Save to cache
+        final cacheData = jsonEncode(fetchedList.map((e) => {
+          'name': e.name,
+          'lastMessage': e.lastMessage,
+          'image': e.image,
+          'fev': e.fev,
+          'conversationId': e.conversationId,
+        }).toList());
+        await prefs.setString('cachedUserList', cacheData);
 
         setState(() {
           list = fetchedList;
@@ -183,8 +218,6 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('selectedConversationId', conversationId);
       print('Conversation ID saved: $conversationId');
-      final savedId = prefs.getString('selectedConversationId');
-      print('Retrieved saved Conversation ID: $savedId');
     } catch (e) {
       print('Error saving conversation ID: $e');
     }
@@ -199,7 +232,7 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: isLoading
+      body: isLoading && list.isEmpty // Only show loading if no cached data
           ? Center(child: CircularProgressIndicator(color: primaryColor1))
           : hasError
               ? Center(
@@ -218,75 +251,78 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
                 )
               : list.isEmpty
                   ? Center(child: Text('No data available', style: secondaryTextStyle()))
-                  : ListView.builder(
-                      padding: EdgeInsets.all(8),
-                      shrinkWrap: true,
-                      itemCount: list.length,
-                      itemBuilder: (BuildContext context, int index) {
-                        EAForYouModel data = list[index];
-                        return Container(
-                          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                          decoration: BoxDecoration(
-                            color: appStore.isDarkModeOn ? Colors.grey[850] : Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey.withOpacity(0.3),
-                                spreadRadius: 1,
-                                blurRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              commonCachedNetworkImage(
-                                data.image,
-                                fit: BoxFit.cover,
-                                height: 60,
-                                width: 60,
-                              ).cornerRadiusWithClipRRect(30),
-                              16.width,
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(data.name ?? 'Unknown', style: boldTextStyle(size: 18)),
-                                  4.height,
-                                  Text(
-                                    data.lastMessage ?? 'No messages yet',
-                                    style: secondaryTextStyle(size: 14),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ).expand(),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    list[index].fev = !(list[index].fev ?? false);
-                                  });
-                                },
-                                icon: Icon(
-                                  Icons.group,
-                                  color: list[index].fev ?? false
-                                      ? primaryColor1
-                                      : appStore.isDarkModeOn
-                                          ? white
-                                          : black,
+                  : RefreshIndicator(
+                      onRefresh: fetchData,
+                      child: ListView.builder(
+                        padding: EdgeInsets.all(8),
+                        shrinkWrap: true,
+                        itemCount: list.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          EAForYouModel data = list[index];
+                          return Container(
+                            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                            decoration: BoxDecoration(
+                              color: appStore.isDarkModeOn ? Colors.grey[850] : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.3),
+                                  spreadRadius: 1,
+                                  blurRadius: 5,
                                 ),
-                              ),
-                            ],
-                          ).paddingAll(8),
-                        ).onTap(() {
-                          String? fullname = list[index].name;
-                          String? conversationId = list[index].conversationId;
-                          if (conversationId != null) {
-                            saveConversationId(conversationId);
-                            joinConversation(conversationId);
-                          }
-                          EAChattingScreen(name: fullname).launch(context);
-                        });
-                      },
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                commonCachedNetworkImage(
+                                  data.image,
+                                  fit: BoxFit.cover,
+                                  height: 60,
+                                  width: 60,
+                                ).cornerRadiusWithClipRRect(30),
+                                16.width,
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(data.name ?? 'Unknown', style: boldTextStyle(size: 18)),
+                                    4.height,
+                                    Text(
+                                      data.lastMessage ?? 'No messages yet',
+                                      style: secondaryTextStyle(size: 14),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ).expand(),
+                                IconButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      list[index].fev = !(list[index].fev ?? false);
+                                    });
+                                  },
+                                  icon: Icon(
+                                    Icons.group,
+                                    color: list[index].fev ?? false
+                                        ? primaryColor1
+                                        : appStore.isDarkModeOn
+                                            ? white
+                                            : black,
+                                  ),
+                                ),
+                              ],
+                            ).paddingAll(8),
+                          ).onTap(() {
+                            String? fullname = list[index].name;
+                            String? conversationId = list[index].conversationId;
+                            if (conversationId != null) {
+                              saveConversationId(conversationId);
+                              joinConversation(conversationId);
+                            }
+                            EAChattingScreen(name: fullname).launch(context);
+                          });
+                        },
+                      ),
                     ),
     );
   }

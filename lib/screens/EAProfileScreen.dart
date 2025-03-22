@@ -39,7 +39,7 @@ class EAProfileScreenState extends State<EAProfileScreen> {
           children: [
             // Top Section
             Container(
-              height: context.height() * 0.55,
+              height: context.height() * 0.58,
               child: Stack(
                 children: [
                   EAProfileTopComponent(),
@@ -66,6 +66,8 @@ class EAProfileScreenState extends State<EAProfileScreen> {
               ),
             ),
             // Bottom Section
+                                     SizedBox(height: 5),
+
             Expanded(
               child: Container(
                 width: context.width(),

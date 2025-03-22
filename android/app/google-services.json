@@ -1,26 +1,36 @@
 {
   "project_info": {
-    "project_number": "447882215014",
-    "project_id": "eventappfcm-f2781",
-    "storage_bucket": "eventappfcm-f2781.firebasestorage.app"
+    "project_number": "1069090358714",
+    "project_id": "ilo2025",
+    "storage_bucket": "ilo2025.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:447882215014:android:c51a1e67be931208ba77a7",
+        "mobilesdk_app_id": "1:1069090358714:android:9edb93391894991fbf0983",
         "android_client_info": {
           "package_name": "com.example.event_prokit"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1069090358714-ptqrhs8ukuo1i0nb4a7abp773dbios5v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyAxH5aa53il-j5hoPnEr7phLF54ecjuD1A"
+          "current_key": "AIzaSyABOhdRcnxBhKyzYjTUyHNBxHnen7kTOEs"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1069090358714-ptqrhs8ukuo1i0nb4a7abp773dbios5v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

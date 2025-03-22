@@ -1,3 +1,4 @@
+import 'package:event_prokit/main.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:animate_do/animate_do.dart';
@@ -45,7 +46,9 @@ class CongressPartnersScreen extends StatelessWidget {
     final List<dynamic> partners = partnersData['partners'];
 
     return Scaffold(
-      backgroundColor: Color(0xFFF5F6FA), // Light background like the design
+    backgroundColor: appStore.isDarkModeOn
+            ? Colors.grey[900] // Dark mode background
+            : Colors.grey[100], // Light mode background
       body: SafeArea(
         child: Column(
           children: [
@@ -56,7 +59,7 @@ class CongressPartnersScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Feed",
+                    "Feed ",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,

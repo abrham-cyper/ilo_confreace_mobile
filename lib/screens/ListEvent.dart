@@ -1,6 +1,13 @@
+import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:video_player/video_player.dart';
 import 'package:event_prokit/screens/AgendaScreen.dart';
+import 'package:event_prokit/screens/AttendeesApp.dart';
 import 'package:event_prokit/screens/BadgeBottomSheet.dart';
+import 'package:event_prokit/screens/Booking.dart';
 import 'package:event_prokit/screens/CongressPartners.dart';
 import 'package:event_prokit/screens/EventDetailPage.dart';
 import 'package:event_prokit/screens/AgendaPage.dart';
@@ -11,10 +18,8 @@ import 'package:event_prokit/screens/MediaPage.dart';
 import 'package:event_prokit/screens/Program.dart';
 import 'package:event_prokit/screens/Speakers.dart';
 import 'package:event_prokit/screens/SupportCenter.dart';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import 'package:event_prokit/main.dart'; // Import main.dart for appStore
+import 'package:flutter_mobx/flutter_mobx.dart'; // Import flutter_mobx for Observer
 
 class ListEvent extends StatefulWidget {
   @override
@@ -23,45 +28,76 @@ class ListEvent extends StatefulWidget {
 
 class _ListEventState extends State<ListEvent> {
   List<Map<String, dynamic>> eventItems = [];
+  late VideoPlayerController _videoController;
 
   @override
   void initState() {
     super.initState();
     fetchEventItems();
+    _videoController = VideoPlayerController.network(
+      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+    )..initialize().then((_) {
+        setState(() {
+          _videoController.play();
+        });
+      });
+    _videoController.setLooping(true);
   }
 
-  Future<void> fetchEventItems() async {
-    final url = 'http://49.13.202.68:5001/api/cards';
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          eventItems = (data['data'] as List).map((item) {
-            return {
-              'title': item['name'],
-              'icon': _getIconForEvent(item['name']),
-              'color': _getColorForEvent(item['name']),
-              '_id': item['_id'],
-            };
-          }).toList();
-          // Manually add "My Badge" if not in API
-          if (!eventItems.any((item) => item['title'] == 'My Badge')) {
-            eventItems.add({
-              'title': 'My Badge',
-              'icon': Icons.badge,
-              'color': Colors.teal,
-              '_id': 'my_badge_id',
-            });
-          }
-        });
-      } else {
-        throw Exception('Failed to load events');
-      }
-    } catch (error) {
-      print('Error fetching events: $error');
-    }
+  @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
   }
+Future<void> fetchEventItems() async {
+  const url = 'http://49.13.202.68:5001/api/cards';
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    String? accessToken = prefs.getString('accessToken');
+
+    if (accessToken == null) {
+      print('No access token found. User may not be logged in.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to view events')),
+      );
+      return;
+    }
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      setState(() {
+        eventItems = (data['data'] as List).map((item) {
+          return {
+            'title': item['name'],
+            'icon': _getIconForEvent(item['name']),
+            'color': _getColorForEvent(item['name']),
+            '_id': item['_id'],
+          };
+        }).toList();
+        if (!eventItems.any((item) => item['title'] == 'My Badge')) {
+          eventItems.add({
+            'title': 'My Badge',
+            'icon': Icons.badge,
+            'color': Colors.teal,
+            '_id': 'my_badge_id',
+          });
+        }
+      });
+    } else {
+      throw Exception('Failed to load events');
+    }
+  } catch (error) {
+    print('Error fetching events: $error');
+  }
+}
 
   IconData _getIconForEvent(String name) {
     switch (name) {
@@ -115,7 +151,7 @@ class _ListEventState extends State<ListEvent> {
       case 'Demos':
         return Colors.cyan;
       case 'Guide':
-        return Colors.indigo;
+        return Colors.green;
       case 'Support':
         return Colors.grey;
       case 'Attendees':
@@ -142,50 +178,100 @@ class _ListEventState extends State<ListEvent> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+    return Observer( // Wrap Scaffold with Observer to react to appStore changes
+      builder: (_) => Scaffold(
+        backgroundColor: appStore.isDarkModeOn
+            ? Colors.grey[900] // Dark mode background
+            : Colors.grey[100], // Light mode background
+        body: SingleChildScrollView(
           child: Column(
-            children: pairedItems.map((pair) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: EventCard(
-                        title: pair[0]['title'],
-                        icon: pair[0]['icon'],
-                        color: pair[0]['color'],
-                        onPressed: () async {
-                          SharedPreferences prefs = await SharedPreferences.getInstance();
-                          await prefs.setString('event_id', pair[0]['_id']);
-                          _navigateToPage(context, pair[0]['title']);
-                        },
-                      ),
+            children: [
+              Container(
+                height: 200,
+                width: double.infinity,
+                margin: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                    const SizedBox(width: 12),
-                    if (pair.length > 1)
-                      Expanded(
-                        child: EventCard(
-                          title: pair[1]['title'],
-                          icon: pair[1]['icon'],
-                          color: pair[1]['color'],
-                          onPressed: () async {
-                            SharedPreferences prefs = await SharedPreferences.getInstance();
-                            await prefs.setString('event_id', pair[1]['_id']);
-                            _navigateToPage(context, pair[1]['title']);
-                          },
-                        ),
-                      )
-                    else
-                      const Expanded(child: SizedBox()),
                   ],
                 ),
-              );
-            }).toList(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      _videoController.value.isInitialized
+                          ? AspectRatio(
+                              aspectRatio: _videoController.value.aspectRatio,
+                              child: VideoPlayer(_videoController),
+                            )
+                          : const Center(child: CircularProgressIndicator()),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withOpacity(0.4),
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.4),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: pairedItems.map((pair) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: EventCard(
+                              title: pair[0]['title'],
+                              icon: pair[0]['icon'],
+                              color: pair[0]['color'],
+                              onPressed: () async {
+                                SharedPreferences prefs = await SharedPreferences.getInstance();
+                                await prefs.setString('event_id', pair[0]['_id']);
+                                _navigateToPage(context, pair[0]['title']);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          if (pair.length > 1)
+                            Expanded(
+                              child: EventCard(
+                                title: pair[1]['title'],
+                                icon: pair[1]['icon'],
+                                color: pair[1]['color'],
+                                onPressed: () async {
+                                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                                  await prefs.setString('event_id', pair[1]['_id']);
+                                  _navigateToPage(context, pair[1]['title']);
+                                },
+                              ),
+                            )
+                          else
+                            const Expanded(child: SizedBox()),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -201,11 +287,16 @@ class _ListEventState extends State<ListEvent> {
         case 'Programme overview':
           page = Program();
           break;
-          case 'Floormap':
+        case 'Floormap':
           page = Floormap();
           break;
-          
-         case 'Agenda':
+        case 'Attendees':
+          page = AttendeesApp();
+          break;
+        case 'Your Ticket':
+          page = UserListScreen();
+          break;
+        case 'Agenda':
           page = AgendaScreen();
           break;
         case 'High Level Program':
@@ -268,7 +359,7 @@ class EventCard extends StatelessWidget {
         height: 120,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color.withOpacity(0.9), color.withOpacity(0.6)],
+            colors: [color.withOpacity(0.9), color.withOpacity(0.6)], // Fixed card colors
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

@@ -1,326 +1,426 @@
 import 'package:flutter/material.dart';
-import 'package:nb_utils/nb_utils.dart';
-import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-// Task model defined inline
-class Task {
-  final int id;
+void main() {
+  runApp(const ProgramApp());
+}
+
+class ProgramApp extends StatelessWidget {
+  const ProgramApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Program Directory',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5), // Light gray background
+        fontFamily: 'Poppins',
+        useMaterial3: true,
+      ),
+      debugShowCheckedModeBanner: false, // Remove debug banner
+      home: const Program(),
+    );
+  }
+}
+
+class Meeting {
   final String title;
-  final String startTime;
-  final String endTime;
-  final String date;
-  final String duration;
-  final String status;
-  final int color;
+  final String time;
+  final String date; // Add date field
+  final int participants;
+  final String platform;
+  final String category;
 
-  Task({
-    required this.id,
+  Meeting({
     required this.title,
-    required this.startTime,
-    required this.endTime,
+    required this.time,
     required this.date,
-    required this.duration,
-    required this.status,
-    required this.color,
+    required this.participants,
+    required this.platform,
+    required this.category,
   });
+
+  factory Meeting.fromJson(Map<String, dynamic> json) {
+    return Meeting(
+      title: json['title'],
+      time: json['time'],
+      date: json['date'], // Parse date from JSON
+      participants: json['participants'],
+      platform: json['platform'],
+      category: json['category'],
+    );
+  }
 }
 
 class Program extends StatefulWidget {
-  const Program({Key? key}) : super(key: key);
+  const Program({super.key});
 
   @override
-  _ProgramState createState() => _ProgramState();
+  State<Program> createState() => _ProgramState();
 }
 
 class _ProgramState extends State<Program> {
-  // Updated task list for May 19-23, 2020
-  List<Task> tasks = [
-    Task(
-      id: 1,
-      title: "Team Briefing",
-      startTime: "09:00",
-      endTime: "09:30",
-      date: "2020-05-19",
-      duration: "30 Minutes",
-      status: "Done",
-      color: 0xFFBBDEFB,
-    ),
-    Task(
-      id: 2,
-      title: "Client Meeting",
-      startTime: "10:00",
-      endTime: "11:30",
-      date: "2020-05-19",
-      duration: "1.5 Hours",
-      status: "In Progress",
-      color: 0xFFE1BEE7,
-    ),
-    Task(
-      id: 3,
-      title: "Project Review",
-      startTime: "12:00",
-      endTime: "13:30",
-      date: "2020-05-20",
-      duration: "1.5 Hours",
-      status: "Upcoming",
-      color: 0xFFB2DFDB,
-    ),
-    Task(
-      id: 4,
-      title: "Lunch Break",
-      startTime: "14:00",
-      endTime: "15:00",
-      date: "2020-05-20",
-      duration: "1 Hour",
-      status: "Upcoming",
-      color: 0xFFFFCDD2,
-    ),
-    Task(
-      id: 5,
-      title: "Design Sprint",
-      startTime: "09:00",
-      endTime: "10:00",
-      date: "2020-05-21",
-      duration: "1 Hour",
-      status: "Upcoming",
-      color: 0xFFBBDEFB,
-    ),
-    Task(
-      id: 6,
-      title: "Code Review",
-      startTime: "11:00",
-      endTime: "12:30",
-      date: "2020-05-22",
-      duration: "1.5 Hours",
-      status: "Upcoming",
-      color: 0xFFE1BEE7,
-    ),
-    Task(
-      id: 7,
-      title: "Weekly Wrap-up",
-      startTime: "14:00",
-      endTime: "15:00",
-      date: "2020-05-23",
-      duration: "1 Hour",
-      status: "Upcoming",
-      color: 0xFFB2DFDB,
-    ),
+  List<Meeting> meetings = [];
+  List<Meeting> filteredMeetings = []; // List to store filtered meetings
+  int _selectedDateIndex = 2; // May 21 is selected by default
+  final List<Map<String, dynamic>> _dates = [
+    {'day': 'Fri', 'date': '19', 'fullDate': 'May 19, 2023'},
+    {'day': 'Sat', 'date': '20', 'fullDate': 'May 20, 2023'},
+    {'day': 'Sun', 'date': '21', 'fullDate': 'May 21, 2023'},
+    {'day': 'Mon', 'date': '22', 'fullDate': 'May 22, 2023'},
+    {'day': 'Tue', 'date': '23', 'fullDate': 'May 23, 2023'},
   ];
 
-  DateTime selectedDate = DateTime(2020, 5, 19); // Default date set to May 19, 2020
+  @override
+  void initState() {
+    super.initState();
+    _loadMeetings();
+  }Future<void> _loadMeetings() async {
+  try {
+    // Retrieve the event_id and access token from SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? eventId = prefs.getString('event_id');
+    String? accessToken = prefs.getString('accessToken');
 
-  // Method to show date picker
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2020, 5, 19), // Start of range: May 19, 2020
-      lastDate: DateTime(2020, 5, 23),  // End of range: May 23, 2020
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Color(0xFF3F51B5), // Header background color
-              onPrimary: Colors.white,    // Header text color
-              surface: Colors.white,      // Background color
-              onSurface: Colors.black,    // Text color
-            ),
-            dialogBackgroundColor: Colors.white,
-          ),
-          child: child!,
-        );
+    if (eventId == null) {
+      print('No event_id found in SharedPreferences');
+      setState(() {
+        meetings = [];
+        filteredMeetings = [];
+      });
+      return;
+    }
+
+    if (accessToken == null) {
+      print('No access token found. User may not be logged in.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to view meetings')),
+      );
+      setState(() {
+        meetings = [];
+        filteredMeetings = [];
+      });
+      return;
+    }
+
+    // Make the authenticated API call to fetch the card data
+    final url = 'http://49.13.202.68:5001/api/cards/$eventId';
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
       },
     );
-    if (picked != null && picked != selectedDate) {
+
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body);
+      final List<dynamic> meetingData = jsonData['data']['meetings'] ?? [];
+
       setState(() {
-        selectedDate = picked;
+        meetings = meetingData.map((json) => Meeting.fromJson(json)).toList();
+        // Filter meetings based on the selected date
+        _filterMeetings();
+      });
+    } else {
+      print('Failed to load meetings: ${response.statusCode}');
+      setState(() {
+        meetings = [];
+        filteredMeetings = [];
       });
     }
+  } catch (error) {
+    print('Error fetching meetings: $error');
+    setState(() {
+      meetings = [];
+      filteredMeetings = [];
+    });
+  }
+}
+
+  void _filterMeetings() {
+    final selectedDate = _dates[_selectedDateIndex]['fullDate'];
+    filteredMeetings = meetings.where((meeting) => meeting.date == selectedDate).toList();
+  }
+
+  void _showMeetingDetails(BuildContext context, Meeting meeting) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(meeting.title),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Time: ${meeting.time}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Date: ${meeting.date}'),
+              const SizedBox(height: 8),
+              Text('Participants: ${meeting.participants}'),
+              const SizedBox(height: 8),
+              Text('Platform: ${meeting.platform}'),
+              const SizedBox(height: 8),
+              Text('Category: ${meeting.category}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Joined ${meeting.title}')),
+              );
+              Navigator.pop(context);
+            },
+            child: const Text('Join Meeting'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Filter tasks for the selected date
-    List<Task> filteredTasks = tasks.where((task) {
-      DateTime taskDate = DateTime.parse(task.date);
-      return taskDate.day == selectedDate.day &&
-          taskDate.month == selectedDate.month &&
-          taskDate.year == selectedDate.year;
-    }).toList();
-
-    return SafeArea(
-      child: Scaffold(
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Color(0xFF3F51B5), // Dark blue
-                Color(0xFFB0BEC5), // Light grey-blue
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
-          child: Column(
-            children: [
-              // Date Selector Section
-              Container(
-                padding: EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "${DateFormat('MMMM, yyyy').format(selectedDate)}",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => _selectDate(context),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today, color: Color(0xFF3F51B5), size: 20),
-                            8.width,
-                            Text(
-                              DateFormat('d MMM').format(selectedDate),
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF3F51B5),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Task List Section
-              Expanded(
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 16),
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Schedule',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Today's Tasks",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                  TextButton(
+                    onPressed: () {
+                      // Handle "See All" button press
+                    },
+                    child: const Text(
+                      '',
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontSize: 14,
                       ),
-                      16.height,
-                      Expanded(
-                        child: filteredTasks.isEmpty
-                            ? Center(
-                                child: Text(
-                                  "No tasks for this date",
-                                  style: TextStyle(
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Calendar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios, size: 16, color: Colors.black54),
+                    onPressed: () {
+                      // Handle previous month
+                    },
+                  ),
+                  const Text(
+                    'May, 2023',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black54),
+                    onPressed: () {
+                      // Handle next month
+                    },
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              height: 60,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                itemCount: _dates.length,
+                itemBuilder: (context, index) {
+                  final date = _dates[index];
+                  final isSelected = index == _selectedDateIndex;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedDateIndex = index;
+                        _filterMeetings(); // Filter meetings when date changes
+                      });
+                    },
+                    child: Container(
+                      width: 60,
+                      margin: const EdgeInsets.symmetric(horizontal: 4.0),
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.blue : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            date['day'],
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black54,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            date['date'],
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : Colors.black87,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Meetings List
+            Expanded(
+              child: filteredMeetings.isEmpty
+                  ? const Center(child: Text('No meetings for this date'))
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      itemCount: filteredMeetings.length,
+                      itemBuilder: (context, index) {
+                        final meeting = filteredMeetings[index];
+                        return AnimatedOpacity(
+                          opacity: 1.0,
+                          duration: const Duration(milliseconds: 500),
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.white,
+                                    Colors.blue[50]!,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.all(16.0),
+                                title: Text(
+                                  meeting.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
                                     fontSize: 16,
-                                    color: Colors.grey,
                                   ),
                                 ),
-                              )
-                            : ListView.builder(
-                                itemCount: filteredTasks.length,
-                                itemBuilder: (context, index) {
-                                  Task task = filteredTasks[index];
-                                  return Container(
-                                    margin: EdgeInsets.only(bottom: 16),
-                                    padding: EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Color(task.color),
-                                      borderRadius: BorderRadius.circular(12),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      meeting.time,
+                                      style: const TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 14,
+                                      ),
                                     ),
-                                    child: Row(
+                                    const SizedBox(height: 8),
+                                    Row(
                                       children: [
-                                        Column(
+                                        // Participant avatars
+                                        Stack(
                                           children: [
-                                            Text(
-                                              task.startTime,
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black,
+                                            const CircleAvatar(
+                                              radius: 12,
+                                              backgroundImage: NetworkImage(
+                                                'https://via.placeholder.com/150',
                                               ),
                                             ),
-                                            Text(
-                                              task.endTime,
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.black54,
+                                            if (meeting.participants > 1)
+                                              Positioned(
+                                                left: 16,
+                                                child: CircleAvatar(
+                                                  radius: 12,
+                                                  backgroundColor: Colors.grey[300],
+                                                  child: Text(
+                                                    '+${meeting.participants}',
+                                                    style: const TextStyle(
+                                                      color: Colors.black54,
+                                                      fontSize: 10,
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                            ),
                                           ],
                                         ),
-                                        16.width,
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                task.title,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
-                                              4.height,
-                                              Text(
-                                                task.duration,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.black54,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Container(
-                                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: Text(
-                                            task.status,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.black,
-                                            ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          meeting.platform,
+                                          style: const TextStyle(
+                                            color: Colors.black54,
+                                            fontSize: 12,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  );
-                                },
+                                  ],
+                                ),
+                                trailing: Chip(
+                                  label: Text(
+                                    meeting.category,
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  backgroundColor: Colors.orange[100],
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                onTap: () => _showMeetingDetails(context, meeting),
                               ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:event_prokit/main.dart';
 import 'package:event_prokit/screens/EADashedBoardScreen.dart';
 import 'package:event_prokit/screens/EAHomeScreen.dart';
 import 'package:event_prokit/utils/constants.dart';
@@ -39,6 +40,7 @@ Future<void> _storeUserData(String email, String accessToken, String refreshToke
     await prefs.setString('refreshToken', refreshToken);
     await prefs.setString('userid', id);  // Saving the 'id' value
     await prefs.setBool('isLoggedIn', true);
+    startTokenRefreshTimer();
 
     print("User data successfully stored.");
   } catch (e) {

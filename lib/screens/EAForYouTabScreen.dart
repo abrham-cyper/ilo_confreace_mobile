@@ -22,30 +22,55 @@ class EAForYouTabScreenState extends State<EAForYouTabScreen> {
     super.initState();
     fetchData();
   }
+Future<void> fetchData() async {
+  try {
+    // Retrieve the access token from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    String? accessToken = prefs.getString('accessToken');
 
-  Future<void> fetchData() async {
-    try {
-      final response = await http.get(Uri.parse('${AppConstants.baseUrl}/api/events'));
-      
-      if (response.statusCode == 200) {
-        List<dynamic> data = jsonDecode(response.body);
-        setState(() {
-          forYouList = data.map((event) => EAForYouModel.fromJson(event)).toList();
-        });
-      } else {
-        print('Failed to load events: ${response.statusCode}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load events: ${response.statusCode}')),
-        );
-      }
-    } catch (e) {
-      print('Error fetching data: $e');
+    if (accessToken == null) {
+      print('No access token found. User may not be logged in.');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching data: $e')),
+        const SnackBar(content: Text('Please log in to view events')),
+      );
+      return;
+    }
+
+    // Make the authenticated HTTP request
+    final response = await http.get(
+      Uri.parse('${AppConstants.baseUrl}/api/events'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json', // Optional, depending on your API
+      },
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = jsonDecode(response.body);
+      setState(() {
+        forYouList = data.map((event) => EAForYouModel.fromJson(event)).toList();
+      });
+    } else if (response.statusCode == 401) {
+      // Handle unauthorized access (e.g., token expired)
+      print('Unauthorized: ${response.statusCode}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Session expired. Please log in again.')),
+      );
+      // Optionally trigger a token refresh or redirect to login
+      // await _refreshAccessToken(); // Uncomment if you have a refresh method
+    } else {
+      print('Failed to load events: ${response.statusCode}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to load events: ${response.statusCode}')),
       );
     }
+  } catch (e) {
+    print('Error fetching data: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error fetching data: $e')),
+    );
   }
-
+}
   @override
   Widget build(BuildContext context) {
     return Scaffold(

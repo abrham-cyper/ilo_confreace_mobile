@@ -1,244 +1,149 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:animate_do/animate_do.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
-class SpeakersScreen extends StatelessWidget {
-  // JSON data for speakers with more detailed information
-  final String speakersJson = '''
-  {
-    "title": "Key Participants of 2025 ILO Regional Conference",
-    "speakers": [
-      {
-        "name": "Gilbert F. Houngbo",
-        "role": "ILO Director-General",
-        "image": "https://example.com/gilbert.jpg",
-        "isOnline": true,
-        "bio": "Gilbert F. Houngbo is the Director-General of the International Labour Organization, leading global efforts to promote social justice and decent work. With a background in international development, he has been instrumental in shaping labor policies worldwide.",
-        "achievements": [
-          "Led the adoption of the Global Coalition for Social Justice in 2023",
-          "Advocated for decent work in the digital economy",
-          "Expanded ILO programs in over 100 countries"
-        ],
-        "contact": {
-          "email": "gilbert.houngbo@ilo.org",
-          "linkedin": "linkedin.com/in/gilberthoungbo"
-        }
-      },
-      {
-        "name": "H.E. Luis Abinader",
-        "role": "President of the Dominican Republic",
-        "image": "https://example.com/luis.jpg",
-        "isOnline": false,
-        "bio": "Luis Abinader is the President of the Dominican Republic, known for his focus on economic reform and social development. He has hosted several international summits to promote sustainable growth in the region.",
-        "achievements": [
-          "Hosted the 20th American Regional Meeting of the ILO in 2025",
-          "Implemented policies to boost tourism and employment",
-          "Promoted renewable energy initiatives"
-        ],
-        "contact": {
-          "email": "president@dominican.gov",
-          "linkedin": "linkedin.com/in/luisabinader"
-        }
-      },
-      {
-        "name": "Dr. Maria Lopez",
-        "role": "Digital Economy Expert",
-        "image": "https://example.com/maria.jpg",
-        "isOnline": true,
-        "bio": "Dr. Maria Lopez is a renowned expert in the digital economy, specializing in the impact of technology on labor markets. She has advised multiple governments on digital transformation strategies.",
-        "achievements": [
-          "Published a bestselling book on digital labor trends",
-          "Consulted for the UN on AI and employment",
-          "Received the 2024 Tech Innovator Award"
-        ],
-        "contact": {
-          "email": "maria.lopez@techconsult.org",
-          "linkedin": "linkedin.com/in/marialopez"
-        }
-      },
-      {
-        "name": "Mr. John Kimani",
-        "role": "Tech Industry Leader",
-        "image": "https://example.com/john.jpg",
-        "isOnline": false,
-        "bio": "John Kimani is a tech industry leader with over 20 years of experience in software development and innovation. He is the CEO of a leading tech firm focused on sustainable solutions.",
-        "achievements": [
-          "Founded a tech company employing over 5,000 people",
-          "Developed an award-winning app for remote work",
-          "Spoke at the 2024 World Economic Forum"
-        ],
-        "contact": {
-          "email": "john.kimani@techfirm.com",
-          "linkedin": "linkedin.com/in/johnkimani"
-        }
-      },
-      {
-        "name": "Ms. Amina Hassan",
-        "role": "Labor Policy Specialist",
-        "image": "https://example.com/amina.jpg",
-        "isOnline": true,
-        "bio": "Amina Hassan is a labor policy specialist with a focus on social protection and inclusive labor markets. She has worked with the ILO on several initiatives to support marginalized workers.",
-        "achievements": [
-          "Designed a social protection framework for informal workers",
-          "Led a global campaign for fair wages",
-          "Published 10+ research papers on labor economics"
-        ],
-        "contact": {
-          "email": "amina.hassan@ilo.org",
-          "linkedin": "linkedin.com/in/aminahassan"
-        }
-      },
-      {
-        "name": "Mr. Carlos Rivera",
-        "role": "Union Representative",
-        "image": "https://example.com/carlos.jpg",
-        "isOnline": false,
-        "bio": "Carlos Rivera is a union representative advocating for workers' rights in the Dominican Republic. He has been a key figure in negotiating better working conditions for factory workers.",
-        "achievements": [
-          "Negotiated a 20% wage increase for factory workers",
-          "Organized a national strike for labor rights",
-          "Received the 2023 Worker Advocate Award"
-        ],
-        "contact": {
-          "email": "carlos.rivera@union.org",
-          "linkedin": "linkedin.com/in/carlosrivera"
-        }
-      },
-      {
-        "name": "Dr. Elena Martinez",
-        "role": "Gender Equality Advocate",
-        "image": "https://example.com/elena.jpg",
-        "isOnline": true,
-        "bio": "Dr. Elena Martinez is a passionate advocate for gender equality in the workplace. She has worked with international organizations to promote equal opportunities for women.",
-        "achievements": [
-          "Launched a global initiative for women in leadership",
-          "Advised the UN on gender equality policies",
-          "Authored a book on workplace diversity"
-        ],
-        "contact": {
-          "email": "elena.martinez@genderequality.org",
-          "linkedin": "linkedin.com/in/elenamartinez"
-        }
-      },
-      {
-        "name": "Mr. Rajesh Gupta",
-        "role": "Environmental Economist",
-        "image": "https://example.com/rajesh.jpg",
-        "isOnline": false,
-        "bio": "Rajesh Gupta is an environmental economist specializing in green jobs and sustainable economic transitions. He has advised governments on climate-friendly labor policies.",
-        "achievements": [
-          "Developed a framework for green job creation",
-          "Consulted for the 2025 COP Climate Summit",
-          "Published research on sustainable economics"
-        ],
-        "contact": {
-          "email": "rajesh.gupta@enviroconsult.org",
-          "linkedin": "linkedin.com/in/rajeshgupta"
-        }
-      },
-      {
-        "name": "Ms. Sofia Mendes",
-        "role": "Climate Policy Advisor",
-        "image": "https://example.com/sofia.jpg",
-        "isOnline": true,
-        "bio": "Sofia Mendes is a climate policy advisor working on the intersection of climate change and labor markets. She has been a key figure in promoting green jobs in the region.",
-        "achievements": [
-          "Advised on the ILO’s climate resilience strategy",
-          "Led a campaign for renewable energy jobs",
-          "Spoke at the 2024 UN Climate Conference"
-        ],
-        "contact": {
-          "email": "sofia.mendes@climatepolicy.org",
-          "linkedin": "linkedin.com/in/sofiamendes"
-        }
-      },
-      {
-        "name": "Ms. Clara Nguyen",
-        "role": "Youth Employment Expert",
-        "image": "https://example.com/clara.jpg",
-        "isOnline": false,
-        "bio": "Clara Nguyen is a youth employment expert focused on education and training programs. She has worked with the ILO to address youth unemployment in developing countries.",
-        "achievements": [
-          "Developed a training program for 10,000 youths",
-          "Partnered with UNESCO on education initiatives",
-          "Received the 2023 Youth Empowerment Award"
-        ],
-        "contact": {
-          "email": "clara.nguyen@youthemployment.org",
-          "linkedin": "linkedin.com/in/claranguyen"
-        }
-      }
-    ]
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Speakers App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: SpeakersScreen(),
+    );
   }
-  ''';
+}
+
+class SpeakersScreen extends StatefulWidget {
+  @override
+  _SpeakersScreenState createState() => _SpeakersScreenState();
+}
+
+class _SpeakersScreenState extends State<SpeakersScreen> {
+  late Future<Map<String, dynamic>> _cardData;
+
+  @override
+  void initState() {
+    super.initState();
+    _cardData = fetchCardData();
+  }
+
+Future<Map<String, dynamic>> fetchCardData() async {
+  // Retrieve event_id and access token from SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
+  final eventId = prefs.getString('event_id') ?? '67dbe86deaddba838ba5d0c3'; // Default ID if not found
+  final String? accessToken = prefs.getString('accessToken');
+
+  if (accessToken == null) {
+    print('No access token found. User may not be logged in.');
+    throw Exception('Please log in to access card data');
+  }
+
+  // Store event_id in SharedPreferences (for demo purposes)
+  await prefs.setString('event_id', eventId);
+
+  // Fetch data from API with authentication
+  final response = await http.get(
+    Uri.parse('http://49.13.202.68:5001/api/cards/$eventId'),
+    headers: {
+      'Authorization': 'Bearer $accessToken',
+      'Content-Type': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  } else {
+    throw Exception('Failed to load card data: ${response.statusCode}');
+  }
+}
 
   @override
   Widget build(BuildContext context) {
-    // Parse JSON data
-    final Map<String, dynamic> speakersData = jsonDecode(speakersJson);
-    final String title = speakersData['title'];
-    final List<dynamic> speakers = speakersData['speakers'];
-
     return Scaffold(
       backgroundColor: Color(0xFFF5E9E2), // Light peach background
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // App Bar with Back Button and Title
-            SliverAppBar(
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_back_ios, color: Colors.black54),
-                onPressed: () => Navigator.pop(context),
-              ),
-              title: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _cardData,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else if (!snapshot.hasData || snapshot.data == null) {
+            return Center(child: Text('No data available'));
+          }
+
+          // Extract data from API response
+          final cardData = snapshot.data!['data'];
+          final String title = cardData['conference'] ?? 'Key Participants';
+          final List<dynamic> speakers = cardData['speakers'] ?? [];
+
+          return SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                // App Bar with Back Button and Title
+                SliverAppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: Icon(Icons.arrow_back_ios, color: Colors.black54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  title: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  pinned: true,
                 ),
-              ),
-              pinned: true,
-            ),
-            // Speakers Grid
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              sliver: SliverGrid(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.75,
+                // Speakers Grid
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  sliver: SliverGrid(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.75,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final speaker = speakers[index];
+                        return FadeInUp(
+                          delay: Duration(milliseconds: 100 * index),
+                          child: SpeakerCard(
+                            name: speaker['name'],
+                            role: speaker['role'],
+                            image: speaker['image'],
+                            isOnline: speaker['isOnline'],
+                            bio: speaker['bio'],
+                            achievements: List<String>.from(speaker['achievements']),
+                            contact: Map<String, dynamic>.from(speaker['contact']),
+                          ),
+                        );
+                      },
+                      childCount: speakers.length,
+                    ),
+                  ),
                 ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final speaker = speakers[index];
-                    return FadeInUp(
-                      delay: Duration(milliseconds: 100 * index),
-                      child: SpeakerCard(
-                        name: speaker['name'],
-                        role: speaker['role'],
-                        image: speaker['image'],
-                        isOnline: speaker['isOnline'],
-                        bio: speaker['bio'],
-                        achievements: List<String>.from(speaker['achievements']),
-                        contact: speaker['contact'],
-                      ),
-                    );
-                  },
-                  childCount: speakers.length,
+                SliverToBoxAdapter(
+                  child: SizedBox(height: 16),
                 ),
-              ),
+              ],
             ),
-            SliverToBoxAdapter(
-              child: SizedBox(height: 16),
-            ),
-          ],
-        ),
+          );
+        },
       ),
-   
     );
   }
 }

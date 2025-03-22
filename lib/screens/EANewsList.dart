@@ -84,31 +84,48 @@ class _EANewsListState extends State<EANewsList> {
 
   Future<void> init() async {
     setStatusBarColor(Colors.transparent);
-  }
+  }Future<void> fetchPartners() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    String? accessToken = prefs.getString('accessToken');
 
-  Future<void> fetchPartners() async {
-    try {
-      final response = await http.get(Uri.parse('${AppConstants.baseUrl}/api/partners'));
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-        final partners = (jsonData['data'] as List)
-            .map((item) => EAEventList.fromJson(item))
-            .toList();
-        setState(() {
-          eventList = partners;
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load partners: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error fetching partners: $e');
+    if (accessToken == null) {
+      print('No access token found. User may not be logged in.');
+      toast('Please log in to view partners');
       setState(() {
         isLoading = false;
       });
-      toast('Failed to load data from server');
+      return;
     }
+
+    final response = await http.get(
+      Uri.parse('${AppConstants.baseUrl}/api/partners'),
+      headers: {
+        'Authorization': 'Bearer $accessToken',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      final partners = (jsonData['data'] as List)
+          .map((item) => EAEventList.fromJson(item))
+          .toList();
+      setState(() {
+        eventList = partners;
+        isLoading = false;
+      });
+    } else {
+      throw Exception('Failed to load partners: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error fetching partners: $e');
+    setState(() {
+      isLoading = false;
+    });
+    toast('Failed to load data from server');
   }
+}
 
   Future<void> _launchBrochureUrl() async {
     final Uri uri = Uri.parse(brochureUrl);
