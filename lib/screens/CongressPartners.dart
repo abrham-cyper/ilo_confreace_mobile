@@ -1,54 +1,69 @@
 import 'package:event_prokit/main.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:animate_do/animate_do.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class CongressPartnersScreen extends StatelessWidget {
-  // JSON data for the congress partners
-  final String partnersJson = '''
-  {
-    "title": "Congress Partners - 2025 ILO Regional Conference",
-    "partners": [
-      {
-        "name": "World Economic Forum",
-        "logo": "https://example.com/wef_logo.jpg",
-        "description": "The World Economic Forum engages the foremost political, business, and cultural leaders to shape global, regional, and industry agendas. #ILORegional2025"
-      },
-      {
-        "name": "United Nations",
-        "logo": "https://example.com/un_logo.jpg",
-        "description": "The United Nations promotes international cooperation and maintains international order. Partnering for sustainable development. #ILORegional2025"
-      },
-      {
-        "name": "Green Jobs Initiative",
-        "logo": "https://example.com/green_jobs_logo.jpg",
-        "description": "The Green Jobs Initiative focuses on creating sustainable employment opportunities in the green economy. 🌱 #ILORegional2025"
-      },
-      {
-        "name": "Global Labor Organization",
-        "logo": "https://example.com/glo_logo.jpg",
-        "description": "The Global Labor Organization supports research and policy development for fair labor practices worldwide. #ILORegional2025"
-      },
-      {
-        "name": "Youth Employment Network",
-        "logo": "https://example.com/yen_logo.jpg",
-        "description": "The Youth Employment Network empowers young people with skills and opportunities for meaningful employment. #ILORegional2025"
-      }
-    ]
+class CongressPartnersScreen extends StatefulWidget {
+  @override
+  _CongressPartnersScreenState createState() => _CongressPartnersScreenState();
+}
+
+class _CongressPartnersScreenState extends State<CongressPartnersScreen> {
+  late Future<List<dynamic>> _partnersData;
+
+  @override
+  void initState() {
+    super.initState();
+    _partnersData = fetchPartners();
   }
-  ''';
+
+  // Function to fetch data from the API
+  Future<List<dynamic>> fetchPartners() async {
+    final String apiUrl = 'http://49.13.202.68:5001/api/partnersapp';
+
+    // Retrieve the access token from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final String? accessToken = prefs.getString('accessToken');
+
+    if (accessToken == null) {
+      throw Exception('No access token found in SharedPreferences');
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('API Response: $data'); // Debug: Log the response
+        if (data is Map<String, dynamic> && data.containsKey('data')) {
+          return data['data']; // Return the list inside 'data'
+        } else if (data is List) {
+          return data; // Return the list directly if no 'data' wrapper
+        } else {
+          throw Exception('Unexpected data format');
+        }
+      } else {
+        throw Exception('Failed to load partners: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error fetching partners: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Parse JSON data
-    final Map<String, dynamic> partnersData = jsonDecode(partnersJson);
-    final String title = partnersData['title'];
-    final List<dynamic> partners = partnersData['partners'];
-
     return Scaffold(
-    backgroundColor: appStore.isDarkModeOn
-            ? Colors.grey[900] // Dark mode background
-            : Colors.grey[100], // Light mode background
+      backgroundColor: appStore.isDarkModeOn
+          ? Colors.grey[900] // Dark mode background
+          : Colors.grey[100], // Light mode background
       body: SafeArea(
         child: Column(
           children: [
@@ -59,39 +74,68 @@ class CongressPartnersScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Feed ",
+                    "Feed",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
                     ),
                   ),
-                  // Removed the 3-dot icon (Icons.more_vert)
                 ],
               ),
             ),
             // Partners List
             Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                itemCount: partners.length,
-                itemBuilder: (context, index) {
-                  final partner = partners[index];
-                  return FadeInUp(
-                    delay: Duration(milliseconds: 100 * index),
-                    child: PartnerCard(
-                      name: partner['name'],
-                      logo: partner['logo'],
-                      description: partner['description'],
-                    ),
-                  );
+              child: FutureBuilder<List<dynamic>>(
+                future: _partnersData,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          'Error: ${snapshot.error}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.red,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    );
+                  } else if (snapshot.hasData) {
+                    final partners = snapshot.data!
+                        .where((partner) => partner['approve'] == true)
+                        .toList(); // Filter for approved partners only
+                    if (partners.isEmpty) {
+                      return Center(child: Text('No approved partners available'));
+                    }
+                    return ListView.builder(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      itemCount: partners.length,
+                      itemBuilder: (context, index) {
+                        final partner = partners[index];
+                        return FadeInUp(
+                          delay: Duration(milliseconds: 100 * index),
+                          child: PartnerCard(
+                            name: partner['name'] ?? 'Unknown',
+                            logo: partner['image'] ?? 'https://via.placeholder.com/50',
+                            description: partner['description'] ?? 'No description available',
+                          ),
+                        );
+                      },
+                    );
+                  } else {
+                    return Center(child: Text('No data available'));
+                  }
                 },
               ),
             ),
           ],
         ),
       ),
-      // Removed the BottomNavigationBar
     );
   }
 }
@@ -123,7 +167,7 @@ class PartnerCard extends StatelessWidget {
         );
       },
       child: Container(
-        margin: EdgeInsets.only(bottom: 12),
+        margin: EdgeInsets.only(bottom: 12.0), // Adds a 12.0 gap below each card
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -139,7 +183,6 @@ class PartnerCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Partner Logo
             ClipRRect(
               borderRadius: BorderRadius.circular(25),
               child: Image.network(
@@ -161,7 +204,7 @@ class PartnerCard extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      name[0],
+                      name.isNotEmpty ? name[0] : '?', // Check for empty string
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -173,7 +216,6 @@ class PartnerCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: 12),
-            // Partner Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +242,6 @@ class PartnerCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Removed the 3-dot icon (Icons.more_horiz)
           ],
         ),
       ),
@@ -228,7 +269,6 @@ class PartnerDetailScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with Back Button and Partner Logo
               Stack(
                 children: [
                   Container(
@@ -284,7 +324,7 @@ class PartnerDetailScreen extends StatelessWidget {
                               ),
                               child: Center(
                                 child: Text(
-                                  name[0],
+                                  name.isNotEmpty ? name[0] : '?', // Check for empty string
                                   style: TextStyle(
                                     fontSize: 30,
                                     fontWeight: FontWeight.bold,
@@ -309,7 +349,6 @@ class PartnerDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              // Description
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(

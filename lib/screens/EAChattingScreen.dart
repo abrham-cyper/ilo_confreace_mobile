@@ -57,7 +57,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
   }
 
   void initializeSocket() {
-    socket = IO.io('http://49.13.202.68:4000', <String, dynamic>{
+    socket = IO.io('http://49.13.202.68:3000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
@@ -147,7 +147,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://49.13.202.68:4000/api/messages/conversation/$conversationId'),
+        Uri.parse('http://49.13.202.68:3000/api/messages/conversation/$conversationId'),
       );
 
       if (response.statusCode == 200) {
@@ -211,7 +211,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
 
       try {
         final response = await http.post(
-          Uri.parse('http://49.13.202.68:4000/api/messages'),
+          Uri.parse('http://49.13.202.68:3000/api/messages'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(payload),
         );
@@ -243,7 +243,7 @@ class EAChattingScreenState extends State<EAChattingScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://49.13.202.68:4000/api/messages/seen'),
+        Uri.parse('http://49.13.202.68:3000/api/messages/seen'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'conversationId': conversationId,

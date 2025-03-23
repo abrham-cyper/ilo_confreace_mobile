@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:event_prokit/screens/UserDetailsScreen.dart';
+import 'package:event_prokit/screens/UserDetailsScreen.dart'; // Ensure this import is correct
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,14 +44,14 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      fullName: Name.fromJson(json['fullName']),
-      email: json['email'],
-      nationality: json['nationality'],
+      fullName: Name.fromJson(json['fullName'] ?? {'first': '', 'middle': '', 'last': ''}),
+      email: json['email'] ?? 'Unknown',
+      nationality: json['nationality'] ?? 'Unknown',
       jobTitle: json['jobTitle'],
       organizationName: json['organizationName'],
-      subscription: json['subscription'],
-      paymentStatus: json['paymentStatus'],
-      createdAt: DateTime.parse(json['createdAt']),
+      subscription: json['subscription'] ?? 'None',
+      paymentStatus: json['paymentStatus'] ?? false,
+      createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
       photo: json['photo'],
       id: json['_id'],
       roleInConference: json['roleInConference'],
@@ -77,9 +77,9 @@ class Name {
 
   factory Name.fromJson(Map<String, dynamic> json) {
     return Name(
-      first: json['first'],
-      middle: json['middle'],
-      last: json['last'],
+      first: json['first'] ?? '',
+      middle: json['middle'] ?? '',
+      last: json['last'] ?? '',
     );
   }
 }
@@ -200,7 +200,10 @@ class _UserListScreenState extends State<UserListScreen> {
                                   padding: const EdgeInsets.all(16),
                                   itemCount: users.length,
                                   itemBuilder: (context, index) {
-                                    return UserTicketCard(user: users[index]);
+                                    if (index >= 0 && index < users.length) {
+                                      return UserTicketCard(user: users[index]);
+                                    }
+                                    return SizedBox.shrink(); // Fallback for invalid index
                                   },
                                 ),
                         ),
@@ -221,11 +224,11 @@ class _UserListScreenState extends State<UserListScreen> {
             children: [
               IconButton(
                 icon: Icon(Icons.arrow_back, color: Colors.black87),
-                onPressed: () {},
+                onPressed: () => Navigator.pop(context),
               ),
               SizedBox(width: 8),
               Text(
-                'My Users',
+                'My pass',
                 style: TextStyle(
                   color: Colors.black87,
                   fontSize: 24,
@@ -234,10 +237,7 @@ class _UserListScreenState extends State<UserListScreen> {
               ),
             ],
           ),
-          IconButton(
-            icon: Icon(Icons.notifications_none, color: Colors.black87),
-            onPressed: () {},
-          ),
+         
         ],
       ),
     );
@@ -261,7 +261,7 @@ class UserTicketCard extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.only(bottom: 16), // Fixed to bottom: 16 below
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -279,7 +279,6 @@ class UserTicketCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Left side (Flag and Date)
                   Container(
                     width: 80,
                     padding: EdgeInsets.symmetric(vertical: 16),
@@ -329,7 +328,6 @@ class UserTicketCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Right side (User details)
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -419,7 +417,6 @@ class UserTicketCard extends StatelessWidget {
                 ],
               ),
             ),
-            // Perforated edge effect
             Positioned(
               left: 70,
               top: -10,

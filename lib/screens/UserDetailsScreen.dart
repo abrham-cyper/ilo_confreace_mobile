@@ -78,10 +78,7 @@ class UserDetailsScreen extends StatelessWidget {
               ),
             ],
           ),
-          IconButton(
-            icon: Icon(Icons.notifications_none, color: Colors.black87),
-            onPressed: () {},
-          ),
+       
         ],
       ),
     );
@@ -296,60 +293,8 @@ class UserDetailsScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              // Implement direction functionality
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade600,
-              foregroundColor: Colors.white,
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 5,
-            ),
-            child: Text(
-              'Direction',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () {
-              // Implement reschedule functionality
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.blue.shade600,
-              side: BorderSide(color: Colors.blue.shade600, width: 2),
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Reschedule',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () {
-              // Implement share QR functionality
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.blue.shade600,
-              side: BorderSide(color: Colors.blue.shade600, width: 2),
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Share QR',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
+       
+         
       ),
     );
   }

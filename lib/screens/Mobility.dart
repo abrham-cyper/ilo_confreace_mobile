@@ -5,134 +5,276 @@ void main() {
   runApp(const MaterialApp(home: Mobility()));
 }
 
-class Mobility extends StatelessWidget {
+class Mobility extends StatefulWidget {
   const Mobility({super.key});
+
+  @override
+  _MobilityState createState() => _MobilityState();
+}
+
+class _MobilityState extends State<Mobility> {
+  final List<Map<String, dynamic>> services = [
+    {
+      'title': 'Airport',
+      'icon': Icons.flight,
+      'color': Colors.blue,
+      'description': 'Reliable airport transfers across Ethiopia.',
+    },
+    {
+      'title': 'Bus',
+      'icon': Icons.directions_bus,
+      'color': Colors.green,
+      'description': 'Connects major cities with modern buses.',
+    },
+    {
+      'title': 'Taxi',
+      'icon': Icons.local_taxi,
+      'color': Colors.orange,
+      'description': 'Convenient urban and intercity taxi services.',
+    },
+    {
+      'title': 'Call',
+      'icon': Icons.phone,
+      'color': Colors.purple,
+      'description': '24/7 support for all transport needs.',
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E21),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Positioned(
-              top: -100,
-              left: -100,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.blueAccent.withOpacity(0.2),
-                      Colors.transparent,
-                    ],
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Mobility Hub',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+            // Services List
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                itemCount: services.length,
+                itemBuilder: (context, index) {
+                  final service = services[index];
+                  return ServiceCard(
+                    title: service['title'],
+                    icon: service['icon'],
+                    color: service['color'],
+                    description: service['description'],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ServiceCard extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Color color;
+  final String description;
+
+  const ServiceCard({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.description,
+  });
+
+  @override
+  _ServiceCardState createState() => _ServiceCardState();
+}
+
+class _ServiceCardState extends State<ServiceCard> {
+  final TextEditingController _phoneController = TextEditingController();
+  final List<String> _phoneNumbers = [];
+
+  void _addPhoneNumber() {
+    if (_phoneController.text.isNotEmpty) {
+      setState(() {
+        _phoneNumbers.add(_phoneController.text);
+        _phoneController.clear();
+      });
+    }
+  }
+
+  void _removePhoneNumber(int index) {
+    setState(() {
+      _phoneNumbers.removeAt(index);
+    });
+  }
+
+  void _showPhoneInputDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Text(
+          'Add Phone for ${widget.title}',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        content: TextField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          style: GoogleFonts.poppins(color: Colors.black87),
+          decoration: InputDecoration(
+            hintText: 'Enter Phone Number',
+            hintStyle: GoogleFonts.poppins(color: Colors.grey),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _addPhoneNumber();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.color,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text(
+              'Add',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ServiceDetailPage(
+              title: widget.title,
+              color: widget.color,
+              icon: widget.icon, // Pass the icon to ServiceDetailPage
+            ),
+          ),
+        );
+      },
+      onLongPress: () => _showPhoneInputDialog(context),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10.0), // Gap between cards
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Icon
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: widget.color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                widget.icon,
+                size: 30,
+                color: widget.color,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Service Info
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Mobility Hub',
-                    style: GoogleFonts.orbitron(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 2,
-                      shadows: [
-                        Shadow(
-                          color: Colors.blueAccent.withOpacity(0.5),
-                          blurRadius: 20,
-                        ),
-                      ],
+                    widget.title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 4),
                   Text(
-                    'Your Gateway to Ethiopia’s Transport',
-                    style: GoogleFonts.roboto(
-                      fontSize: 18,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w300,
+                    widget.description,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      height: 1.5,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E2F),
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blueAccent.withOpacity(0.2),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
+                  if (_phoneNumbers.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 5.0,
+                      runSpacing: 5.0,
+                      children: _phoneNumbers
+                          .asMap()
+                          .entries
+                          .map(
+                            (entry) => GestureDetector(
+                              onTap: () => _removePhoneNumber(entry.key),
+                              child: Chip(
+                                label: Text(
+                                  entry.value,
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                                backgroundColor: widget.color,
+                                padding: const EdgeInsets.symmetric(horizontal: 5),
+                              ),
+                            ),
+                          )
+                          .toList(),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'General Information',
-                          style: GoogleFonts.orbitron(
-                            fontSize: 20,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '• Operating Hours: 24/7\n'
-                          '• Customer Support: +251-911-123-456\n'
-                          '• Payment Methods: Cash, Mobile Money, Card\n'
-                          '• Coverage: Major Ethiopian Cities\n'
-                          '• Booking: App, Website, or Call Center',
-                          style: GoogleFonts.roboto(
-                            fontSize: 14,
-                            color: Colors.white70,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 40),
-                  Expanded(
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 20,
-                      mainAxisSpacing: 20,
-                      childAspectRatio: 0.85,
-                      children: [
-                        CircularServiceCard(
-                          title: 'Airport',
-                          icon: Icons.flight,
-                          glowColor: Colors.cyan,
-                        ),
-                        CircularServiceCard(
-                          title: 'Bus',
-                          icon: Icons.directions_bus,
-                          glowColor: Colors.greenAccent,
-                        ),
-                        CircularServiceCard(
-                          title: 'Taxi',
-                          icon: Icons.local_taxi,
-                          glowColor: Colors.yellowAccent,
-                        ),
-                        CircularServiceCard(
-                          title: 'Call',
-                          icon: Icons.phone,
-                          glowColor: Colors.purpleAccent,
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -143,12 +285,16 @@ class Mobility extends StatelessWidget {
   }
 }
 
-// New Service Detail Page
 class ServiceDetailPage extends StatelessWidget {
   final String title;
-  final Color glowColor;
+  final Color color;
+  final IconData icon; // Added icon parameter
 
-  const ServiceDetailPage({super.key, required this.title, required this.glowColor});
+  const ServiceDetailPage({
+    required this.title,
+    required this.color,
+    required this.icon,
+  });
 
   String getDetailedInfo() {
     switch (title.toLowerCase()) {
@@ -299,212 +445,86 @@ Additional Services:
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E21),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
-          '$title Services',
-          style: GoogleFonts.orbitron(color: Colors.white, fontSize: 24),
+          '$title Details',
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
         ),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.all(15),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E2F),
-                  borderRadius: BorderRadius.circular(15),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: glowColor.withOpacity(0.3),
-                      blurRadius: 10,
-                      spreadRadius: 2,
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                child: Text(
-                  getDetailedInfo(),
-                  style: GoogleFonts.roboto(
-                    fontSize: 16,
-                    color: Colors.white70,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class CircularServiceCard extends StatefulWidget {
-  final String title;
-  final IconData icon;
-  final Color glowColor;
-
-  const CircularServiceCard({
-    super.key,
-    required this.title,
-    required this.icon,
-    required this.glowColor,
-  });
-
-  @override
-  _CircularServiceCardState createState() => _CircularServiceCardState();
-}
-
-class _CircularServiceCardState extends State<CircularServiceCard> {
-  final TextEditingController _phoneController = TextEditingController();
-  final List<String> _phoneNumbers = [];
-
-  void _addPhoneNumber() {
-    if (_phoneController.text.isNotEmpty) {
-      setState(() {
-        _phoneNumbers.add(_phoneController.text);
-        _phoneController.clear();
-      });
-    }
-  }
-
-  void _removePhoneNumber(int index) {
-    setState(() {
-      _phoneNumbers.removeAt(index);
-    });
-  }
-
-  void _showPhoneInputDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E2F),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          'Add Phone for ${widget.title}',
-          style: GoogleFonts.orbitron(color: Colors.white, fontSize: 20),
-        ),
-        content: TextField(
-          controller: _phoneController,
-          keyboardType: TextInputType.phone,
-          style: GoogleFonts.roboto(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'Enter Phone Number',
-            hintStyle: GoogleFonts.roboto(color: Colors.white54),
-            filled: true,
-            fillColor: const Color(0xFF2A2A3D),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: GoogleFonts.roboto(color: Colors.white70)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _addPhoneNumber();
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: widget.glowColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: Text('Add', style: GoogleFonts.roboto(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ServiceDetailPage(
-              title: widget.title,
-              glowColor: widget.glowColor,
-            ),
-          ),
-        );
-      },
-      onLongPress: () => _showPhoneInputDialog(context),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: const Color(0xFF1E1E2F),
-          boxShadow: [
-            BoxShadow(
-              color: widget.glowColor.withOpacity(0.5),
-              blurRadius: 15,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(widget.icon, size: 40, color: widget.glowColor),
-            const SizedBox(height: 5),
-            Text(
-              widget.title,
-              style: GoogleFonts.orbitron(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-                letterSpacing: 1,
-              ),
-            ),
-            if (_phoneNumbers.isNotEmpty) ...[
-              const SizedBox(height: 5),
-              SizedBox(
-                height: 60,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: Wrap(
-                    spacing: 5.0,
-                    runSpacing: 5.0,
-                    alignment: WrapAlignment.center,
-                    children: _phoneNumbers
-                        .asMap()
-                        .entries
-                        .map(
-                          (entry) => GestureDetector(
-                            onTap: () => _removePhoneNumber(entry.key),
-                            child: Chip(
-                              label: Text(
-                                entry.value,
-                                style: GoogleFonts.roboto(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              backgroundColor: widget.glowColor.withOpacity(0.8),
-                              padding: const EdgeInsets.symmetric(horizontal: 5),
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        )
-                        .toList(),
-                  ),
+                          child: Icon(
+                            icon, // Use the passed icon
+                            size: 24,
+                            color: color,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          title,
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      getDetailedInfo(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.grey[800],
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ],
+          ),
         ),
       ),
     );

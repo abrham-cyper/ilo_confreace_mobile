@@ -64,7 +64,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
       return;
     }
 
-    final url = 'http://49.13.202.68:4000/api/conversations';
+    final url = 'http://49.13.202.68:3000/api/conversations';
     try {
       final response = await http.post(
         Uri.parse(url),

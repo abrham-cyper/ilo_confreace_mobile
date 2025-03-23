@@ -30,7 +30,7 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
   }
 
   void initializeSocket() {
-    socket = IO.io('http://49.13.202.68:4000', <String, dynamic>{
+    socket = IO.io('http://49.13.202.68:3000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': false,
     });
@@ -79,7 +79,7 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
   }
 
   Future<String?> fetchLastMessage(String conversationId) async {
-    final url = 'http://49.13.202.68:4000/api/messages/conversation/$conversationId';
+    final url = 'http://49.13.202.68:3000/api/messages/conversation/$conversationId';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -145,7 +145,7 @@ class EAMayBEYouKnowScreenState extends State<EAMayBEYouKnowScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://49.13.202.68:4000/api/messages/list/$userId'),
+        Uri.parse('http://49.13.202.68:3000/api/messages/list/$userId'),
       );
 
       if (response.statusCode == 200) {
