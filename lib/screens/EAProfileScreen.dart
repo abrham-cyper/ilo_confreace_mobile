@@ -73,7 +73,7 @@ class EAProfileScreenState extends State<EAProfileScreen> {
                 width: context.width(),
                 padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: white,
+                  
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(30),
                     topRight: Radius.circular(30),

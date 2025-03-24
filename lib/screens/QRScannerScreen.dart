@@ -6,6 +6,7 @@ import 'package:nb_utils/nb_utils.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart'; // Add this import
 
 class QRScannerScreen extends StatefulWidget {
   @override
@@ -93,8 +94,29 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     }
 
     final url = 'http://49.13.202.68:5001/api/user/userid/$userId';
+
+    // Get the access token from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final String? accessToken = prefs.getString('accessToken');
+
+    if (accessToken == null) {
+      setState(() {
+        errorMessage = "No access token found. Please log in.";
+        isLoading = false;
+        isProcessing = false;
+      });
+      controller?.resumeCamera();
+      return;
+    }
+
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $accessToken', // Add the token to the header
+          'Content-Type': 'application/json', // Optional, depending on API
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -120,13 +142,21 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           });
           controller?.resumeCamera(); // Resume scanning
         }
+      } else if (response.statusCode == 401) {
+        // Handle unauthorized access (e.g., token expired)
+        setState(() {
+          errorMessage = "Unauthorized: Invalid or expired token";
+          isLoading = false;
+          isProcessing = false;
+        });
+        controller?.resumeCamera();
       } else {
         setState(() {
           errorMessage = "Error fetching user data: ${response.statusCode}";
           isLoading = false;
           isProcessing = false;
         });
-        controller?.resumeCamera(); // Resume scanning
+        controller?.resumeCamera();
       }
     } catch (error) {
       setState(() {
@@ -134,7 +164,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         isLoading = false;
         isProcessing = false;
       });
-      controller?.resumeCamera(); // Resume scanning
+      controller?.resumeCamera();
     }
   }
 }

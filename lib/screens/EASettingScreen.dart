@@ -9,7 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Added for SharedPreferences
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EASettingScreen extends StatefulWidget {
   const EASettingScreen({Key? key}) : super(key: key);
@@ -28,7 +28,7 @@ class _EASettingScreenState extends State<EASettingScreen> {
     setStatusBarColor(primaryColor1);
   }
 
-   String selectedLanguage = "English"; // Default language
+  String selectedLanguage = "English"; // Default language
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +48,6 @@ class _EASettingScreenState extends State<EASettingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              16.height,
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -77,45 +76,7 @@ class _EASettingScreenState extends State<EASettingScreen> {
                   appStore.toggleDarkMode();
                 },
               ),
-              Container(
-  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(10),
-  ),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Row(
-        children: [
-          Icon(LineIcons.language, size: 30),
-          SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Language", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text(selectedLanguage, style: TextStyle(color: Colors.grey)),
-            ],
-          ),
-        ],
-      ),
-      DropdownButton<String>(
-        value: selectedLanguage,
-        icon: Icon(Icons.arrow_drop_down, color: Colors.grey.withOpacity(0.7)),
-        underline: SizedBox(),
-        items: ["English", "French", "Spanish", "German"]
-            .map((lang) => DropdownMenuItem(value: lang, child: Text(lang)))
-            .toList(),
-        onChanged: (String? newValue) {
-          setState(() => selectedLanguage = newValue!);
-        },
-      ),
-    ],
-  ),
-)
-,
-
-
+              // Removed the 16.height and empty Container here
               SettingItemWidget(
                 title: "Change Email",
                 leading: Icon(LineIcons.envelope, size: 30),
@@ -205,27 +166,25 @@ class _EASettingScreenState extends State<EASettingScreen> {
               },
               child: Text("Cancel"),
             ),
-          TextButton(
-  onPressed: () async {
-    // Clear all SharedPreferences data
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear(); // Removes all stored key-value pairs
-    print("All SharedPreferences cleared");
+            TextButton(
+              onPressed: () async {
+                // Clear all SharedPreferences data
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear(); // Removes all stored key-value pairs
+                print("All SharedPreferences cleared");
 
-    Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop(); // Close the dialog
 
-    // Navigate to the SignIn screen and replace the current screen
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => SignIn(),
-      ),
-    );
-  },
-  child: Text("Logout"),
-)
-
-
+                // Navigate to the SignIn screen and replace the current screen
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SignIn(),
+                  ),
+                );
+              },
+              child: Text("Logout"),
+            ),
           ],
         );
       },
