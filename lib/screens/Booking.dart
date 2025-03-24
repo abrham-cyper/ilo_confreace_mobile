@@ -126,9 +126,34 @@ class _UserListScreenState extends State<UserListScreen> {
       print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = jsonDecode(response.body);
+        final dynamic jsonData = jsonDecode(response.body);
+
+        // Handle different possible JSON structures
+        List<dynamic> userList;
+        if (jsonData is List<dynamic>) {
+          userList = jsonData; // Direct list: [...]
+        } else if (jsonData is Map<String, dynamic>) {
+          // Check common keys like "data", "users", or "result"
+          if (jsonData.containsKey('data')) {
+            userList = jsonData['data'] as List<dynamic>;
+          } else if (jsonData.containsKey('users')) {
+            userList = jsonData['users'] as List<dynamic>;
+          } else if (jsonData.containsKey('result')) {
+            userList = jsonData['result'] as List<dynamic>;
+          } else {
+            // If it's a single user object, wrap it in a list
+            if (jsonData.containsKey('_id') || jsonData.containsKey('email')) {
+              userList = [jsonData];
+            } else {
+              throw Exception('Unexpected JSON structure: no recognizable list key found');
+            }
+          }
+        } else {
+          throw Exception('Unexpected JSON format: not a list or map');
+        }
+
         setState(() {
-          users = jsonData.map((json) => User.fromJson(json)).toList();
+          users = userList.map((json) => User.fromJson(json)).toList();
           isLoading = false;
         });
       } else {
@@ -192,7 +217,7 @@ class _UserListScreenState extends State<UserListScreen> {
                           child: users.isEmpty
                               ? Center(
                                   child: Text(
-                                    'No users found',
+                                    'No cards set yet',
                                     style: TextStyle(color: Colors.black54),
                                   ),
                                 )
@@ -203,7 +228,7 @@ class _UserListScreenState extends State<UserListScreen> {
                                     if (index >= 0 && index < users.length) {
                                       return UserTicketCard(user: users[index]);
                                     }
-                                    return SizedBox.shrink(); // Fallback for invalid index
+                                    return SizedBox.shrink();
                                   },
                                 ),
                         ),
@@ -237,7 +262,6 @@ class _UserListScreenState extends State<UserListScreen> {
               ),
             ],
           ),
-         
         ],
       ),
     );
@@ -261,7 +285,7 @@ class UserTicketCard extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 16), // Fixed to bottom: 16 below
+        padding: const EdgeInsets.only(bottom: 16), // Fixed to bottom: 16
         child: Stack(
           clipBehavior: Clip.none,
           children: [

@@ -16,4 +16,4 @@ const event_ic_cinema = "$BaseUrl/images/eventApp/cinema.jpg";
 const event_ic_visa = "$BaseUrl/images/eventApp/visa.png";
 const event_ic_master = "$BaseUrl/images/eventApp/paypal.png";
 const event_ic_amex = "$BaseUrl/images/eventApp/amex.png";
-const event_ic_map = "$BaseUrl/images/eventApp/map.jpg";
+const event_ic_map = "https://media.istockphoto.com/id/583735828/photo/ethiopia-pinned-on-the-map-with-flag.jpg?s=2048x2048&w=is&k=20&c=glo9jtFtknX4F03tgQyIuba96cBY5lHSjQg4aZSWcnc=";

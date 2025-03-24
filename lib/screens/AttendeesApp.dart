@@ -154,7 +154,7 @@ class _AttendeesScreenState extends State<AttendeesScreen> {
           isLoading = false;
 
           if (attendees.isEmpty) {
-            errorMessage = 'No contacts exist with payment status true';
+            errorMessage = 'No contacts exist';
           }
         });
       } else {

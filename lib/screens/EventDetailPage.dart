@@ -180,7 +180,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 20),
           child: Text(
-            'No content available for this event.',
+            'No content available .',
             style: TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ),

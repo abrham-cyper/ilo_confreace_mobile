@@ -38,6 +38,30 @@ class _MobilityState extends State<Mobility> {
       'color': Colors.purple,
       'description': '24/7 support for all transport needs.',
     },
+    {
+      'title': 'Hotel',
+      'icon': Icons.hotel,
+      'color': Colors.red,
+      'description': 'Affordable lodging options for immigrants.',
+    },
+    {
+      'title': 'Embassy',
+      'icon': Icons.account_balance,
+      'color': Colors.teal,
+      'description': 'Embassy contacts for visa and support.',
+    },
+    {
+      'title': 'Health',
+      'icon': Icons.local_hospital,
+      'color': Colors.pink,
+      'description': 'Healthcare services and emergency contacts.',
+    },
+    {
+      'title': 'Jobs',
+      'icon': Icons.work,
+      'color': Colors.indigo,
+      'description': 'Job opportunities and resources for immigrants.',
+    },
   ];
 
   @override
@@ -186,14 +210,14 @@ class _ServiceCardState extends State<ServiceCard> {
             builder: (context) => ServiceDetailPage(
               title: widget.title,
               color: widget.color,
-              icon: widget.icon, // Pass the icon to ServiceDetailPage
+              icon: widget.icon,
             ),
           ),
         );
       },
       onLongPress: () => _showPhoneInputDialog(context),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10.0), // Gap between cards
+        margin: const EdgeInsets.only(bottom: 10.0), // Should be bottom: 10.0
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -209,7 +233,6 @@ class _ServiceCardState extends State<ServiceCard> {
         ),
         child: Row(
           children: [
-            // Icon
             Container(
               width: 50,
               height: 50,
@@ -224,7 +247,6 @@ class _ServiceCardState extends State<ServiceCard> {
               ),
             ),
             const SizedBox(width: 12),
-            // Service Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -288,7 +310,7 @@ class _ServiceCardState extends State<ServiceCard> {
 class ServiceDetailPage extends StatelessWidget {
   final String title;
   final Color color;
-  final IconData icon; // Added icon parameter
+  final IconData icon;
 
   const ServiceDetailPage({
     required this.title,
@@ -303,20 +325,20 @@ class ServiceDetailPage extends StatelessWidget {
 Airport Transfer Services in Ethiopia
 
 Overview:
-Our airport transfer services provide reliable transportation to and from major airports across Ethiopia. We ensure comfortable and timely transfers for both domestic and international travelers.
+Our airport transfer services provide reliable transportation to and from major airports across Ethiopia, ideal for immigrants arriving in the country.
 
 Features:
 • 24/7 availability at major airports
 • Professional drivers with local knowledge
 • Modern vehicles with air conditioning
 • Real-time flight tracking
-• Meet and greet service
+• Meet and greet service for new arrivals
 
 Major Airports Served:
 1. Addis Ababa Bole International Airport (ADD)
    - Largest hub in Ethiopia
    - Multiple daily transfers
-   - VIP lounge access available
+   - Immigrant assistance desk
 2. Bahir Dar Airport (BJR)
    - Serving northern Ethiopia
    - Scenic route options
@@ -326,19 +348,19 @@ Major Airports Served:
 Pricing:
 • Starting at 25 USD for standard transfers
 • Premium options available from 50 USD
-• Group rates available
+• Group rates for families or groups
 
 Booking Options:
 • Pre-book through our app
 • On-arrival booking at airport counters
-• Phone reservation system
+• Phone reservation system: +251-911-123-456
 ''';
       case 'bus':
         return '''
 Bus Transportation Services in Ethiopia
 
 Overview:
-Our bus services connect major cities and towns across Ethiopia with a modern fleet of vehicles designed for comfort and safety.
+Our bus services connect major cities and towns, offering an affordable travel option for immigrants exploring or settling in Ethiopia.
 
 Features:
 • Daily scheduled departures
@@ -366,13 +388,14 @@ Pricing:
 Terminals:
 • Main terminal at Meskel Square, Addis Ababa
 • Regional terminals in major cities
+• Immigrant-friendly staff available
 ''';
       case 'taxi':
         return '''
 Taxi Services in Ethiopia
 
 Overview:
-Our taxi services offer convenient urban and intercity transportation with a fleet of well-maintained vehicles and professional drivers.
+Our taxi services offer convenient urban and intercity transportation, perfect for immigrants navigating new cities.
 
 Features:
 • Instant booking via app
@@ -401,14 +424,14 @@ Coverage Areas:
 Safety:
 • All drivers background-checked
 • Vehicles regularly inspected
-• GPS tracking
+• GPS tracking for route assistance
 ''';
       case 'call':
         return '''
 Call Center Services
 
 Overview:
-Our dedicated call center provides comprehensive support for all your transportation needs in Ethiopia.
+Our dedicated call center provides comprehensive support for immigrants with transportation and settlement needs in Ethiopia.
 
 Services:
 • Booking assistance for all transport types
@@ -422,12 +445,12 @@ Contact Numbers:
    - Hours: 8 AM - 8 PM
 2. Emergency Line: +251-911-789-012
    - Available: 24/7
-3. Booking Hotline: +251-911-456-789
+3. Immigrant Hotline: +251-911-456-789
    - Hours: 6 AM - 10 PM
 
 Features:
-• Multi-language support (Amharic, English, more)
-• Trained customer service representatives
+• Multi-language support (Amharic, English, Arabic, more)
+• Trained representatives for immigrant queries
 • Quick response times
 • Complaint resolution system
 • Travel advisory updates
@@ -436,6 +459,148 @@ Additional Services:
 • SMS confirmation for bookings
 • Email support: support@mobilityhub.et
 • Live chat through our website
+''';
+      case 'hotel':
+        return '''
+Hotel and Accommodation Services
+
+Overview:
+Affordable and safe lodging options for immigrants settling in Ethiopia, ranging from budget stays to mid-range hotels.
+
+Options:
+1. Budget Hotels
+   - Price: 10-20 USD per night
+   - Basic amenities (bed, Wi-Fi, water)
+   - Locations: Addis Ababa, Dire Dawa
+2. Mid-Range Hotels
+   - Price: 25-50 USD per night
+   - Includes breakfast, air conditioning
+   - Locations: Major cities
+3. Long-Term Stays
+   - Monthly rates from 200 USD
+   - Furnished rooms with kitchenette
+
+Popular Choices:
+• Harmony Hotel, Addis Ababa
+   - Near Bole Airport
+   - Immigrant-friendly staff
+• Selam Hotel, Bahir Dar
+   - Lake view rooms
+• Dire Dawa Guesthouse
+   - Budget option near airport
+
+Booking:
+• Call: +251-911-555-123
+• App: Mobility Hub app
+• Walk-in available
+
+Tips for Immigrants:
+• Ask for weekly/monthly discounts
+• Verify proximity to public transport
+• Carry ID for check-in
+''';
+      case 'embassy':
+        return '''
+Embassy and Consulate Services
+
+Overview:
+Key embassy contacts for immigrants needing visa support, documentation, or emergency assistance in Ethiopia.
+
+Major Embassies in Addis Ababa:
+1. U.S. Embassy
+   - Address: Entoto Street, Addis Ababa
+   - Phone: +251-111-306-000
+   - Services: Visa renewals, citizen services
+2. UK Embassy
+   - Address: Comoros St, Addis Ababa
+   - Phone: +251-116-170-100
+   - Services: Passports, emergency travel
+3. EU Delegation
+   - Address: Cape Verde St, Addis Ababa
+   - Phone: +251-116-612-511
+   - Services: Schengen visa info
+
+Other Embassies:
+• Somali Embassy: +251-911-222-333
+• Eritrean Embassy: +251-911-444-555
+• Sudanese Embassy: +251-911-666-777
+
+Services:
+• Visa extensions
+• Lost passport replacement
+• Emergency repatriation
+• Legal assistance referrals
+
+Tips for Immigrants:
+• Book appointments online where possible
+• Bring all immigration documents
+• Contact in advance for emergencies
+''';
+      case 'health':
+        return '''
+Healthcare Services
+
+Overview:
+Access to medical facilities and emergency services for immigrants in Ethiopia.
+
+Key Hospitals:
+1. St. Paul’s Hospital, Addis Ababa
+   - Address: Swaziland St
+   - Phone: +251-112-757-011
+   - Services: General care, emergencies
+2. Hawassa University Hospital
+   - Phone: +251-462-205-311
+   - Services: Affordable treatment
+3. Bahir Dar Felege Hiwot Hospital
+   - Phone: +251-582-207-811
+
+Emergency Numbers:
+• Ambulance: 911 or +251-911-999-000
+• Medical Hotline: +251-911-888-111
+
+Services:
+• Free clinics for basic care
+• Vaccination programs
+• Maternal and child health
+• Pharmacy locator
+
+Tips for Immigrants:
+• Carry health insurance if possible
+• Register with local clinics
+• Learn basic Amharic medical terms
+''';
+      case 'jobs':
+        return '''
+Job Opportunities for Immigrants
+
+Overview:
+Resources and opportunities for immigrants seeking employment in Ethiopia.
+
+Job Sectors:
+1. Agriculture
+   - Roles: Farm workers, supervisors
+   - Pay: 50-100 USD/month
+2. Construction
+   - Roles: Laborers, skilled trades
+   - Pay: 80-150 USD/month
+3. Hospitality
+   - Roles: Hotel staff, guides
+   - Pay: 60-120 USD/month
+
+Resources:
+• Ethiojobs.net
+   - Online job portal
+   - Register for free
+• Refugee Job Center, Addis Ababa
+   - Phone: +251-911-777-222
+   - Walk-in support
+• UN Migration Agency (IOM)
+   - Phone: +251-116-611-111
+
+Tips for Immigrants:
+• Learn basic Amharic for better opportunities
+• Bring translated work certificates
+• Network at community centers
 ''';
       default:
         return 'No information available';
@@ -495,7 +660,7 @@ Additional Services:
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(
-                            icon, // Use the passed icon
+                            icon,
                             size: 24,
                             color: color,
                           ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:event_prokit/main.dart'; // For appStore
 import 'package:event_prokit/utils/EAColors.dart';
-import 'package:nb_utils/nb_utils.dart'; // Your app colors
+import 'package:nb_utils/nb_utils.dart';
 
 class EditProfileScreen extends StatefulWidget {
   @override
@@ -11,19 +11,15 @@ class EditProfileScreen extends StatefulWidget {
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
   // Controllers for text fields
-  final TextEditingController emailController = TextEditingController(text: "maysasha@gmail.com");
-  final TextEditingController passwordController = TextEditingController(text: "••••••••");
-  final TextEditingController phoneController = TextEditingController(text: "+1 415.111.0000");
-  final TextEditingController cityStateController = TextEditingController(text: "San Francisco, CA");
-  final TextEditingController countryController = TextEditingController(text: "USA");
-  final TextEditingController bioController = TextEditingController(text: "Event enthusiast and tech lover.");
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController countryController = TextEditingController();
+  final TextEditingController bioController = TextEditingController();
 
   @override
   void dispose() {
     emailController.dispose();
-    passwordController.dispose();
     phoneController.dispose();
-    cityStateController.dispose();
     countryController.dispose();
     bioController.dispose();
     super.dispose();
@@ -33,144 +29,172 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Observer(
       builder: (_) => Scaffold(
-        backgroundColor: appStore.isDarkModeOn
-            ? Colors.grey[900] // Dark mode background
-            : Colors.grey[100], // Light mode background
+        backgroundColor: appStore.isDarkModeOn ? Colors.grey[900] : Colors.grey[100],
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          leading: TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Cancel action
-            },
-            child: Text(
-              "Cancel",
-              style: TextStyle(
-                color: appStore.isDarkModeOn ? white : Colors.grey[600],
-                fontSize: 16,
-              ),
-            ),
-          ),
+      
           title: Text(
             "Edit Profile",
             style: TextStyle(
               color: appStore.isDarkModeOn ? white : black,
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
           centerTitle: true,
           actions: [
-            TextButton(
-              onPressed: () {
-                // Save action (e.g., update profile data)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Profile saved!")),
-                );
-                Navigator.pop(context);
-              },
-              child: Text(
-                "Save",
-                style: TextStyle(
-                  color: primaryColor1,
-                  fontSize: 16,
-                ),
-              ),
-            ),
+            
           ],
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Picture with Edit Icon
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: appStore.isDarkModeOn ? cardDarkColor : Colors.grey[300]!,
-                        width: 4,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundImage: NetworkImage(
-                        "https://example.com/profile.jpg", // Replace with actual image URL
-                      ),
-                      backgroundColor: Colors.grey[300],
-                      child: Icon(
-                        Icons.person,
-                        size: 50,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: EdgeInsets.all(6),
+              // Profile Picture Section
+              Center(
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: primaryColor1,
-                        border: Border.all(color: white, width: 2),
+                        border: Border.all(
+                          color: appStore.isDarkModeOn ? Colors.grey[700]! : Colors.grey[300]!,
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
                       ),
-                      child: Icon(
-                        Icons.camera_alt,
-                        size: 20,
-                        color: white,
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Colors.grey[300],
+                        child: Icon(
+                          Icons.person_outline,
+                          size: 60,
+                          color: appStore.isDarkModeOn ? Colors.grey[600] : Colors.grey[500],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    Positioned(
+                      bottom: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () {
+                          toast("Change profile picture (feature coming soon)");
+                        },
+                        child: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: primaryColor1,
+                            border: Border.all(color: white, width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.edit,
+                            size: 20,
+                            color: white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              SizedBox(height: 24),
-              // Email Field
+              SizedBox(height: 32),
+              // Form Fields
+              _buildSectionTitle("Contact Information"),
+              SizedBox(height: 16),
               _buildTextField(
-                label: "YOUR EMAIL",
+                label: "Email",
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
+                hintText: "Enter your email",
               ),
-              SizedBox(height: 16),
-              // Password Field
+              SizedBox(height: 20),
               _buildTextField(
-                label: "YOUR PASSWORD",
-                controller: passwordController,
-                obscureText: true,
-              ),
-              SizedBox(height: 16),
-              // Phone Field
-              _buildTextField(
-                label: "YOUR PHONE",
+                label: "Phone",
                 controller: phoneController,
                 keyboardType: TextInputType.phone,
+                hintText: "Enter your phone number",
               ),
+              SizedBox(height: 32),
+              _buildSectionTitle("Location"),
               SizedBox(height: 16),
-              // Bio Field
               _buildTextField(
-                label: "YOUR BIO",
-                controller: bioController,
-                maxLines: 3, // Allow multiple lines for bio
-              ),
-              SizedBox(height: 16),
-              // City, State Field
-              _buildTextField(
-                label: "CITY, STATE",
-                controller: cityStateController,
-              ),
-              SizedBox(height: 16),
-              // Country Field
-              _buildTextField(
-                label: "COUNTRY",
+                label: "Country",
                 controller: countryController,
+                hintText: "Enter your country",
               ),
-              SizedBox(height: 24),
+              SizedBox(height: 32),
+              _buildSectionTitle("About You"),
+              SizedBox(height: 16),
+              _buildTextField(
+                label: "Bio",
+                controller: bioController,
+                maxLines: 4,
+                hintText: "Tell us about yourself",
+              ),
+              SizedBox(height: 40),
+              // Save Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (emailController.text.isEmpty) {
+                      toast("Email cannot be empty");
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Profile updated successfully")),
+                    );
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor1,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
+                  ),
+                  child: Text(
+                    "Save Profile",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: white,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: appStore.isDarkModeOn ? white : black,
       ),
     );
   }
@@ -179,6 +203,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String label,
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
+    String? hintText,
     bool obscureText = false,
     int maxLines = 1,
   }) {
@@ -188,9 +213,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 12,
-            // color: appStore.isDarkModeOn ? secondaryTextDark : Colors.grey[600],
-            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: appStore.isDarkModeOn ? Colors.grey[400] : Colors.grey[700],
           ),
         ),
         SizedBox(height: 8),
@@ -204,8 +229,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             color: appStore.isDarkModeOn ? white : black,
           ),
           decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: TextStyle(
+              color: appStore.isDarkModeOn ? Colors.grey[600] : Colors.grey[400],
+            ),
             filled: true,
-            fillColor: appStore.isDarkModeOn ? cardDarkColor : Colors.grey[100],
+            fillColor: appStore.isDarkModeOn ? Colors.grey[800] : Colors.white,
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -213,15 +242,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: appStore.isDarkModeOn ? Colors.grey[700]! : Colors.grey[300]!,
+                width: 1,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: primaryColor1, width: 1),
+              borderSide: BorderSide(color: primaryColor1, width: 2),
             ),
           ),
         ),
       ],
     );
   }
+}
+
+void main() {
+  runApp(MaterialApp(
+    home: EditProfileScreen(),
+    theme: ThemeData(
+      primarySwatch: Colors.blue,
+    ),
+  ));
 }

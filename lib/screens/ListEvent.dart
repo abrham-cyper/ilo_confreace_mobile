@@ -30,12 +30,15 @@ class _ListEventState extends State<ListEvent> {
   List<Map<String, dynamic>> eventItems = [];
   late VideoPlayerController _videoController;
 
+  // Define a single primary color
+  static const Color primaryColor1 = Colors.green; // You can change this to any color
+
   @override
   void initState() {
     super.initState();
     fetchEventItems();
     _videoController = VideoPlayerController.network(
-      'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+      'https://assets.mixkit.co/videos/13192/13192-720.mp4',
     )..initialize().then((_) {
         setState(() {
           _videoController.play();
@@ -49,55 +52,56 @@ class _ListEventState extends State<ListEvent> {
     _videoController.dispose();
     super.dispose();
   }
-Future<void> fetchEventItems() async {
-  const url = 'http://49.13.202.68:5001/api/cards';
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    String? accessToken = prefs.getString('accessToken');
 
-    if (accessToken == null) {
-      print('No access token found. User may not be logged in.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to view events')),
+  Future<void> fetchEventItems() async {
+    const url = 'http://49.13.202.68:5001/api/cards';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? accessToken = prefs.getString('accessToken');
+
+      if (accessToken == null) {
+        print('No access token found. User may not be logged in.');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please log in to view events')),
+        );
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
       );
-      return;
-    }
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      setState(() {
-        eventItems = (data['data'] as List).map((item) {
-          return {
-            'title': item['name'],
-            'icon': _getIconForEvent(item['name']),
-            'color': _getColorForEvent(item['name']),
-            '_id': item['_id'],
-          };
-        }).toList();
-        if (!eventItems.any((item) => item['title'] == 'My Badge')) {
-          eventItems.add({
-            'title': 'My Badge',
-            'icon': Icons.badge,
-            'color': Colors.teal,
-            '_id': 'my_badge_id',
-          });
-        }
-      });
-    } else {
-      throw Exception('Failed to load events');
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          eventItems = (data['data'] as List).map((item) {
+            return {
+              'title': item['name'],
+              'icon': _getIconForEvent(item['name']),
+              'color': primaryColor1, // Use the single primary color
+              '_id': item['_id'],
+            };
+          }).toList();
+          if (!eventItems.any((item) => item['title'] == 'My Badge')) {
+            eventItems.add({
+              'title': 'My Badge',
+              'icon': Icons.badge,
+              'color': primaryColor1, // Use the single primary color
+              '_id': 'my_badge_id',
+            });
+          }
+        });
+      } else {
+        throw Exception('Failed to load events');
+      }
+    } catch (error) {
+      print('Error fetching events: $error');
     }
-  } catch (error) {
-    print('Error fetching events: $error');
   }
-}
 
   IconData _getIconForEvent(String name) {
     switch (name) {
@@ -134,41 +138,6 @@ Future<void> fetchEventItems() async {
     }
   }
 
-  Color _getColorForEvent(String name) {
-    switch (name) {
-      case 'Programme':
-        return Colors.blue;
-      case 'Agenda':
-        return Colors.green;
-      case 'High Level Program':
-        return Colors.purple;
-      case 'Speakers':
-        return Colors.orange;
-      case 'Media':
-        return Colors.pink;
-      case 'Mobility':
-        return Colors.red;
-      case 'Demos':
-        return Colors.cyan;
-      case 'Guide':
-        return Colors.green;
-      case 'Support':
-        return Colors.grey;
-      case 'Attendees':
-        return Colors.amber;
-      case 'Workshops':
-        return Colors.deepPurple;
-      case 'Networking':
-        return Colors.deepOrange;
-      case 'Map':
-        return Colors.blueGrey;
-      case 'My Badge':
-        return Colors.teal;
-      default:
-        return Colors.blueAccent;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     List<List<Map<String, dynamic>>> pairedItems = [];
@@ -178,11 +147,11 @@ Future<void> fetchEventItems() async {
       );
     }
 
-    return Observer( // Wrap Scaffold with Observer to react to appStore changes
+    return Observer(
       builder: (_) => Scaffold(
         backgroundColor: appStore.isDarkModeOn
-            ? Colors.grey[900] // Dark mode background
-            : Colors.grey[100], // Light mode background
+            ? Colors.grey[900]
+            : Colors.grey[100],
         body: SingleChildScrollView(
           child: Column(
             children: [
@@ -233,7 +202,7 @@ Future<void> fetchEventItems() async {
                 child: Column(
                   children: pairedItems.map((pair) {
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
+                      padding: const EdgeInsets.only(bottom: 12.0), // Fix this typo later
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -294,7 +263,7 @@ Future<void> fetchEventItems() async {
           page = AttendeesApp();
           break;
         case 'Your Ticket':
-          page = UserListScreen();
+          page = UserListScreen(); // Assuming this is defined elsewhere
           break;
         case 'Agenda':
           page = AgendaScreen();
@@ -306,7 +275,7 @@ Future<void> fetchEventItems() async {
           page = SpeakersScreen();
           break;
         case 'Media':
-          page = ConferenceFeedScreen();
+          page = ConferenceFeedScreen(); // Assuming this is defined elsewhere
           break;
         case 'Mobility':
           page = Mobility();
@@ -359,7 +328,7 @@ class EventCard extends StatelessWidget {
         height: 120,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color.withOpacity(0.9), color.withOpacity(0.6)], // Fixed card colors
+            colors: [color.withOpacity(0.9), color.withOpacity(0.6)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),

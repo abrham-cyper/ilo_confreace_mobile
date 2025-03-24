@@ -121,7 +121,7 @@ class BecomePartenerState extends State<BecomePartener> {
         final result = jsonDecode(response.body);
 
         if (response.statusCode == 200 || response.statusCode == 201) {
-          setState(() {
+          setState(() { 
             // successMessage = 'Participant registered successfully!';
             // Clear the form
             nameController.clear();

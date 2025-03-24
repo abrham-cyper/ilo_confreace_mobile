@@ -7,7 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Model for EAEventList with additional fields
 class EAEventList {
@@ -23,6 +23,7 @@ class EAEventList {
   final int galaDinnerInvitations;
   final String advertOnMaterials;
   final String websiteAdvertisement;
+  final String type;
 
   EAEventList({
     this.id,
@@ -37,6 +38,7 @@ class EAEventList {
     required this.galaDinnerInvitations,
     required this.advertOnMaterials,
     required this.websiteAdvertisement,
+    required this.type,
   });
 
   factory EAEventList.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class EAEventList {
       galaDinnerInvitations: json['galaDinnerInvitations'],
       advertOnMaterials: json['advertOnMaterials'],
       websiteAdvertisement: json['websiteAdvertisement'],
+      type: json['type'] ?? 'unknown',
     );
   }
 }
@@ -67,7 +70,9 @@ class _EANewsListState extends State<EANewsList> {
   PageController pageController = PageController(initialPage: 0);
   int currentIndexPage = 0;
   List<EAEventList> eventList = [];
+  List<EAEventList> allPartners = [];
   bool isLoading = true;
+  String? selectedType;
 
   final List<String> imageList = [
     "https://i.pinimg.com/736x/65/56/ee/6556eedae5d32a12661d0895760c826b.jpg",
@@ -84,48 +89,62 @@ class _EANewsListState extends State<EANewsList> {
 
   Future<void> init() async {
     setStatusBarColor(Colors.transparent);
-  }Future<void> fetchPartners() async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    String? accessToken = prefs.getString('accessToken');
-
-    if (accessToken == null) {
-      print('No access token found. User may not be logged in.');
-      toast('Please log in to view partners');
-      setState(() {
-        isLoading = false;
-      });
-      return;
-    }
-
-    final response = await http.get(
-      Uri.parse('${AppConstants.baseUrl}/api/partners'),
-      headers: {
-        'Authorization': 'Bearer $accessToken',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-      final partners = (jsonData['data'] as List)
-          .map((item) => EAEventList.fromJson(item))
-          .toList();
-      setState(() {
-        eventList = partners;
-        isLoading = false;
-      });
-    } else {
-      throw Exception('Failed to load partners: ${response.statusCode}');
-    }
-  } catch (e) {
-    print('Error fetching partners: $e');
-    setState(() {
-      isLoading = false;
-    });
-    toast('Failed to load data from server');
   }
-}
+
+  Future<void> fetchPartners() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? accessToken = prefs.getString('accessToken');
+
+      if (accessToken == null) {
+        print('No access token found. User may not be logged in.');
+        toast('Please log in to view partners');
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://49.13.202.68:5001/api/partners'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        final partners = (jsonData['data'] as List)
+            .map((item) => EAEventList.fromJson(item))
+            .toList();
+        setState(() {
+          allPartners = partners;
+          eventList = partners;
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load partners: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching partners: $e');
+      setState(() {
+        isLoading = false;
+      });
+      toast('Failed to load data from server');
+    }
+  }
+
+  void filterByType(String? type) {
+    setState(() {
+      selectedType = type;
+      if (type == null) {
+        eventList = List.from(allPartners);
+      } else {
+        eventList = allPartners.where((partner) => partner.type == type).toList();
+      }
+    });
+  }
 
   Future<void> _launchBrochureUrl() async {
     final Uri uri = Uri.parse(brochureUrl);
@@ -136,20 +155,19 @@ class _EANewsListState extends State<EANewsList> {
     }
   }
 
-// Function to save the selected package to SharedPreferences
-Future<void> _savePackageToPrefs(String packageName, String? partnerId) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setString('selected_package', packageName);
-  if (partnerId != null) {
-    await prefs.setString('packageid', partnerId);
-  } else {
-    await prefs.remove('packageid'); // Clear the ID if null
+  Future<void> _savePackageToPrefs(String packageName, String? partnerId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selected_package', packageName);
+    if (partnerId != null) {
+      await prefs.setString('packageid', partnerId);
+    } else {
+      await prefs.remove('packageid');
+    }
+    print('Saved package: $packageName');
+    print('Saved package ID: $partnerId');
+    toast('Package $packageName saved successfully');
   }
 
-  print('Saved package: $packageName'); // For debugging
-  print('Saved package ID: $partnerId'); // For debugging
-  toast('Package $packageName saved successfully'); // Optional feedback
-}
   @override
   void setState(fn) {
     if (mounted) super.setState(fn);
@@ -157,6 +175,8 @@ Future<void> _savePackageToPrefs(String packageName, String? partnerId) async {
 
   @override
   Widget build(BuildContext context) {
+    final uniqueTypes = allPartners.map((e) => e.type).toSet().toList();
+
     return Scaffold(
       body: NestedScrollView(
         headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
@@ -164,7 +184,7 @@ Future<void> _savePackageToPrefs(String packageName, String? partnerId) async {
             SliverAppBar(
               floating: true,
               pinned: true,
-              expandedHeight: 300.0,
+              expandedHeight: 380.0, // Increased height to accommodate larger gap
               forceElevated: innerBoxIsScrolled,
               title: Text(
                 innerBoxIsScrolled ? "Become a Partner" : "",
@@ -211,7 +231,7 @@ Future<void> _savePackageToPrefs(String packageName, String? partnerId) async {
                       ),
                     ),
                     Positioned(
-                      bottom: 30,
+                      bottom: 100, // Increased gap by moving text higher
                       left: 12,
                       right: 12,
                       child: Column(
@@ -227,8 +247,7 @@ Future<void> _savePackageToPrefs(String packageName, String? partnerId) async {
                           ),
                           SizedBox(height: 8),
                           Text(
-
-"Partner with the 2025 ILO Regional Conference to boost visibility, connect with leaders, and shape the future of work.",
+                            "Partner with the 2025 ILO Regional Conference to boost visibility, connect with leaders, and shape the future of work.",
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -236,6 +255,52 @@ Future<void> _savePackageToPrefs(String packageName, String? partnerId) async {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 40, // Filter buttons stay lower, creating a gap
+                      left: 12,
+                      right: 12,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: ChoiceChip(
+                                label: Text(
+                                  'All',
+                                  style: TextStyle(
+                                    color: selectedType == null ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                                selected: selectedType == null,
+                                selectedColor: Colors.black, // Black when selected
+                                backgroundColor: Colors.grey.withOpacity(0.7),
+                                onSelected: (selected) {
+                                  if (selected) filterByType(null);
+                                },
+                              ),
+                            ),
+                            ...uniqueTypes.map((type) => Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: ChoiceChip(
+                                label: Text(
+                                  type,
+                                  style: TextStyle(
+                                    color: selectedType == type ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                                selected: selectedType == type,
+                                selectedColor: Colors.black, // Black when selected
+                                backgroundColor: Colors.grey.withOpacity(0.7),
+                                onSelected: (selected) {
+                                  if (selected) filterByType(type);
+                                },
+                              ),
+                            )).toList(),
+                          ],
+                        ),
                       ),
                     ),
                     Positioned(
@@ -264,148 +329,136 @@ Future<void> _savePackageToPrefs(String packageName, String? partnerId) async {
         },
         body: isLoading
             ? Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                shrinkWrap: true,
-                padding: EdgeInsets.all(12),
-                itemCount: eventList.length,
-                itemBuilder: (context, i) {
-                  return Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Image.network(
-                            eventList[i].image,
-                            fit: BoxFit.cover,
-                            width: 100,
-                            height: 100,
-                          ).cornerRadiusWithClipRRect(8),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(eventList[i].name, style: boldTextStyle(size: 18)),
-                                SizedBox(height: 8),
-                                Text(eventList[i].date, style: secondaryTextStyle()),
-                                SizedBox(height: 8),
-                                Text(
-                                  '\$${eventList[i].cost.toString()}',
-                                  style: boldTextStyle(color: Colors.green),
+            : eventList.isEmpty
+                ? Center(child: Text('No partners found for this type'))
+                : ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.all(12),
+                    itemCount: eventList.length,
+                    itemBuilder: (context, i) {
+                      return Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: EdgeInsets.all(12),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Image.network(
+                                eventList[i].image,
+                                fit: BoxFit.cover,
+                                width: 100,
+                                height: 100,
+                              ).cornerRadiusWithClipRRect(8),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(eventList[i].name, style: boldTextStyle(size: 18)),
+                                    SizedBox(height: 8),
+                                    Text(eventList[i].date, style: secondaryTextStyle()),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      '\$${eventList[i].cost.toString()}',
+                                      style: boldTextStyle(color: Colors.green),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ).onTap(
-                    () async {
-                      // Save the selected package to SharedPreferences
-                    await _savePackageToPrefs(eventList[i].name, eventList[i].id);
-
-                      // Navigate to EANewsDetailScreen
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => EANewsDetailScreen(event: eventList[i]),
                         ),
+                      ).onTap(
+                        () async {
+                          await _savePackageToPrefs(eventList[i].name, eventList[i].id);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EANewsDetailScreen(event: eventList[i]),
+                            ),
+                          );
+                        },
                       );
                     },
-                  );
-                },
-              ),
+                  ),
       ),
     );
   }
 }
-
-
-
+ 
 
 class EANewsDetailScreen extends StatelessWidget {
   final EAEventList event;
 
   const EANewsDetailScreen({required this.event, super.key});
 
-  // Function to save the selected package to SharedPreferences
   Future<void> _savePackageToPrefs(String packageName) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selected_package', packageName);
-    print('Saved package: $packageName'); // For debugging
+    print('Saved package: $packageName');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildBody(context),
-    );
-  }
-
-  Widget _buildBody(BuildContext context) {
-    return Stack(
-      children: [
-        SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildEventImage(context),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildEventHeader(),
-                    const SizedBox(height: 20),
-                    if (event.about != null) _buildAboutSection(),
-                    const SizedBox(height: 20),
-                    _buildDetailsSection(),
-                    const SizedBox(height: 80), // Space for persistent button
-                  ],
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildEventImage(context),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildEventHeader(),
+                      const SizedBox(height: 20),
+                      if (event.about != null) _buildAboutSection(),
+                      const SizedBox(height: 20),
+                      _buildDetailsSection(),
+                      const SizedBox(height: 80),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        _buildPersistentApplyButton(context),
-      ],
+          _buildPersistentApplyButton(context),
+        ],
+      ),
     );
   }
 
   Widget _buildEventImage(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: 300,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [primaryColor1, Colors.transparent],
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-        ),
-      ),
-      child: ClipRRect(
-        child: Image.network(
-          event.image,
-          width: double.infinity,
-          height: 300,
-          fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return Container(
-              height: 300,
-              color: Colors.grey[200],
-              child: const Center(child: CircularProgressIndicator()),
-            );
-          },
-          errorBuilder: (context, error, stackTrace) => Container(
-            height: 300,
-            color: Colors.grey[300],
-            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(
+            event.image,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                color: Colors.grey[200],
+                child: const Center(child: CircularProgressIndicator()),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey[300],
+              child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+            ),
           ),
-        ),
+          // Subtle overlay for better text readability
+          Container(
+            color: Colors.black.withOpacity(0.3),
+          ),
+        ],
       ),
     );
   }
@@ -416,30 +469,24 @@ class EANewsDetailScreen extends StatelessWidget {
       children: [
         Text(
           event.name,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 32,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
             letterSpacing: 0.5,
-            shadows: [
-              Shadow(
-                color: primaryColor1,
-                blurRadius: 10,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Row(
           children: [
-            const Icon(Icons.calendar_today, size: 18, color: primaryColor1),
+            Icon(Icons.calendar_today, size: 20, color: primaryColor1),
             const SizedBox(width: 8),
             Text(
               event.date,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontStyle: FontStyle.italic,
+                color: Colors.grey[700],
               ),
             ),
           ],
@@ -449,58 +496,58 @@ class EANewsDetailScreen extends StatelessWidget {
   }
 
   Widget _buildAboutSection() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: Colors.white.withOpacity(0.95),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          event.about!,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.black87,
-            height: 1.6,
-          ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!, width: 1),
+      ),
+      child: Text(
+        event.about!,
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.black87,
+          height: 1.6,
         ),
       ),
     );
   }
 
   Widget _buildDetailsSection() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: Colors.white.withOpacity(0.95),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _buildDetailRow("Cost ", "\$${event.cost}", Icons.attach_money),
-            _buildDetailRow("Exhibition Booth ", event.exhibitionBooth, Icons.store),
-            _buildDetailRow("VIP Passes", event.vipPasses.toString(), Icons.star),
-            _buildDetailRow("Delegate Passes", event.delegatePasses.toString(), Icons.group),
-            _buildDetailRow("Gala Dinner Invitations ", event.galaDinnerInvitations.toString(), Icons.dinner_dining),
-            _buildDetailRow("Advertisement on Materials ", event.advertOnMaterials, Icons.print),
-            _buildDetailRow("Website Advertisement ", event.websiteAdvertisement, Icons.web),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!, width: 1),
+      ),
+      child: Column(
+        children: [
+          _buildDetailRow("Cost", "\$${event.cost}", Icons.attach_money),
+          _buildDetailRow("Exhibition Booth", event.exhibitionBooth, Icons.store),
+          _buildDetailRow("VIP Passes", event.vipPasses.toString(), Icons.star),
+          _buildDetailRow("Delegate Passes", event.delegatePasses.toString(), Icons.group),
+          _buildDetailRow("Gala Dinner Invitations", event.galaDinnerInvitations.toString(), Icons.dinner_dining),
+          _buildDetailRow("Advertisement on Materials", event.advertOnMaterials, Icons.print),
+          _buildDetailRow("Website Advertisement", event.websiteAdvertisement, Icons.web),
+        ],
       ),
     );
   }
 
   Widget _buildDetailRow(String title, String value, IconData icon) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 22, color: primaryColor1),
+          Icon(icon, size: 24, color: primaryColor1),
           const SizedBox(width: 12),
           Expanded(
             flex: 2,
             child: Text(
-              "$title:",
+              title,
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -512,9 +559,10 @@ class EANewsDetailScreen extends StatelessWidget {
             flex: 3,
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 color: primaryColor1,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -531,34 +579,30 @@ class EANewsDetailScreen extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         width: double.infinity,
-        height: 60,
+        height: 56,
         child: ElevatedButton.icon(
           onPressed: () async {
-            // Save the selected package to SharedPreferences
             await _savePackageToPrefs(event.name);
-
-            // Navigate to BecomePartener screen after a short delay
-            Future.delayed(const Duration(milliseconds: 500), () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => BecomePartener()),
-              );
-            });
+            await Future.delayed(const Duration(milliseconds: 300));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => BecomePartener()),
+            );
           },
-          icon: const Icon(Icons.check_circle, size: 24),
+          icon: const Icon(Icons.check_circle_outline, size: 24),
           label: const Text(
             "Apply Now",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
+            foregroundColor: white,
             backgroundColor: primaryColor1,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            elevation: 8,
-            shadowColor: primaryColor1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
           ),
         ),
       ),
     );
   }
 }
+ 

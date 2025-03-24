@@ -191,7 +191,7 @@ class _SupportHomePageState extends State<SupportHomePage>
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          shadows: [Shadow(color: white, blurRadius: 10)],
+                          // shadows: [Shadow(color: white, blurRadius: 10)],
                         ),
                       ),
                     ],
@@ -202,7 +202,7 @@ class _SupportHomePageState extends State<SupportHomePage>
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor,
+                        color: isDarkModeOn ?  Colors.grey[100]:Colors.grey[900] ,
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
                     ),
                     child: ListView(

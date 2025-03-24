@@ -18,31 +18,31 @@ class ConferenceFeedScreen extends StatelessWidget {
         "heightFactor": 1.2
       },
       {
-        "mediaUrl": "https://images.pexels.com/photos/955395/pexels-photo-955395.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+        "mediaUrl": "https://cdn.pixabay.com/video/2016/05/12/3132-166335897_large.mp4",
         "mediaType": "video",
         "description": "Highlights from the climate resilience panel! The insights on green jobs were inspiring. 🌱 #ILORegional2025",
         "heightFactor": 1.5
       },
       {
-        "mediaUrl": "https://example.com/post3.jpg",
+        "mediaUrl": "https://images.unsplash.com/photo-1529070538774-1843cb3265df?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
         "mediaType": "image",
         "description": "Networking reception at the Garden Pavilion was a highlight! Great conversations and live music. 🎶 #ILORegional2025",
         "heightFactor": 1.0
       },
       {
-        "mediaUrl": "https://v1.pinimg.com/videos/mc/expMp4/44/27/99/442799477c10f469cb01832bf304e1bb_t3.mp4",
+        "mediaUrl": "https://media.istockphoto.com/id/2147551830/video/tablet-conference-and-speaker-with-business-people-on-a-stage-for-discussion-presentation-and.mp4?s=mp4-640x640-is&k=20&c=ntMyRTXs2Bn3RULL-8ivM2jPxAfetudoe7_U1oI9Jic=",
         "mediaType": "video",
         "description": "Advocating for gender equality in the workplace at the ILO Conference. Let's close the gap! 💪 #ILORegional2025",
         "heightFactor": 1.3
       },
       {
-        "mediaUrl": "https://example.com/post5.jpg",
+        "mediaUrl": "https://media.istockphoto.com/id/1972509852/photo/business-people-meeting-and-tablet-with-conversation-planning-or-discussion-with-teamwork.jpg?s=2048x2048&w=is&k=20&c=7_s-g0EtOAGSzPcvjfZ3oF86g5bFuq-exRZYHK55fNw=",
         "mediaType": "image",
         "description": "Sharing insights on green jobs and sustainable economic transitions. 🌍 #ILORegional2025",
         "heightFactor": 1.1
       },
       {
-        "mediaUrl": "https://v1.pinimg.com/videos/mc/expMp4/44/27/99/442799477c10f469cb01832bf304e1bb_t3.mp4",
+        "mediaUrl": "https://cdn.pixabay.com/video/2017/03/08/8252-207598592_large.mp4",
         "mediaType": "video",
         "description": "Climate policy discussions at the ILO Conference were eye-opening! #ILORegional2025",
         "heightFactor": 1.4

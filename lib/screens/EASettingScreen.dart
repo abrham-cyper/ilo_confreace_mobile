@@ -1,5 +1,6 @@
 import 'package:event_prokit/main.dart';
 import 'package:event_prokit/screens/About.dart';
+import 'package:event_prokit/screens/EditProfileScreen.dart';
 import 'package:event_prokit/screens/SignIn.dart';
 import 'package:event_prokit/screens/feedback.dart';
 import 'package:event_prokit/utils/EAColors.dart';
@@ -77,12 +78,21 @@ class _EASettingScreenState extends State<EASettingScreen> {
                 },
               ),
               // Removed the 16.height and empty Container here
-              SettingItemWidget(
-                title: "Change Email",
-                leading: Icon(LineIcons.envelope, size: 30),
-                subTitle: "abrham@gmail.com",
-                trailing: Icon(Icons.arrow_forward_ios_outlined, size: 18, color: grey.withOpacity(0.3)),
-              ),
+            SettingItemWidget(
+            title: "Edit Profile",
+            leading: Icon(LineIcons.envelope, size: 30),
+            subTitle: "Edit Profile",
+            trailing: Icon(Icons.edit, size: 18, color: grey.withOpacity(0.3)),
+            onTap: () {
+              // Navigate to ProfileEditPage when tapped
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditProfileScreen(),
+                ),
+              );
+            },
+          ),
               SettingItemWidget(
                 title: "Location",
                 leading: Icon(LineIcons.city, size: 30),
