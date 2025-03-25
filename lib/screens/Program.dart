@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -107,7 +108,7 @@ class _ProgramState extends State<Program> {
     }
 
     // Make the authenticated API call to fetch the card data
-    final url = 'http://49.13.202.68:5001/api/cards/$eventId';
+    final url = '${AppConstants.baseUrl}/api/cards/$eventId';
     final response = await http.get(
       Uri.parse(url),
       headers: {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:event_prokit/screens/UserDetailsScreen.dart'; // Ensure this import is correct
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -105,7 +106,7 @@ class _UserListScreenState extends State<UserListScreen> {
   Future<void> fetchUsers() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? accessToken = prefs.getString('accessToken');
-    const String apiUrl = 'http://49.13.202.68:5001/api/registerUser';
+    const String apiUrl = '${AppConstants.baseUrl}/api/registerUser';
 
     setState(() {
       isLoading = true;

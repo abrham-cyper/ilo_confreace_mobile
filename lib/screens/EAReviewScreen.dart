@@ -56,7 +56,7 @@ class _EAReviewScreenState extends State<EAReviewScreen> {
     }
 
     try {
-      final response = await http.get(Uri.parse('http://49.13.202.68:5001/api/user/userid/$userId'));
+      final response = await http.get(Uri.parse('${AppConstants.baseUrl}/api/user/userid/$userId'));
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         String fullName = jsonData['user']['fullname'] ?? 'Unknown User';

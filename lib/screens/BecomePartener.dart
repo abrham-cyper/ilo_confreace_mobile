@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:event_prokit/utils/EAColors.dart';
@@ -26,7 +27,7 @@ class BecomePartenerState extends State<BecomePartener> {
   bool isLocalCompany = false;
 
   // API endpoint
-  final String apiUrl = 'http://49.13.202.68:5001/api/partnersapp';
+  final String apiUrl = '${AppConstants.baseUrl}/api/partnersapp';
 
   // Loading and feedback states
   bool isLoading = false;

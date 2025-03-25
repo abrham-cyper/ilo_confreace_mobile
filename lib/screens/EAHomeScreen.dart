@@ -79,7 +79,7 @@ class EAHomeScreenState extends State<EAHomeScreen> {
       }
 
       final response = await http.post(
-        Uri.parse('http://49.13.202.68:5001/api/user/email-checker'),
+        Uri.parse('${AppConstants.baseUrl}/api/user/email-checker'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email}),
       );
@@ -252,7 +252,7 @@ class _ProfileUpdateDialogState extends State<ProfileUpdateDialog>
       print("Sending profile data: $profileData");
 
       final response = await http.put(
-        Uri.parse('http://49.13.202.68:5001/api/user/update-profile'),
+        Uri.parse('${AppConstants.baseUrl}/api/user/update-profile'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(profileData),
       );

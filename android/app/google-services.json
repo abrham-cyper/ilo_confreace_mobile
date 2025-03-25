@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "1069090358714",
-    "project_id": "ilo2025",
-    "storage_bucket": "ilo2025.firebasestorage.app"
+    "project_number": "233394389923",
+    "project_id": "ilo-event2025",
+    "storage_bucket": "ilo-event2025.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1069090358714:android:9edb93391894991fbf0983",
+        "mobilesdk_app_id": "1:233394389923:android:84e27aa51e91e6f55c5016",
         "android_client_info": {
-          "package_name": "com.example.event_prokit"
+          "package_name": "com.ILO2025.event"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "1069090358714-ptqrhs8ukuo1i0nb4a7abp773dbios5v.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyABOhdRcnxBhKyzYjTUyHNBxHnen7kTOEs"
+          "current_key": "AIzaSyBt8IIyCJtTFo5UnAdGHx9sycutpFlnAuk"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1069090358714-ptqrhs8ukuo1i0nb4a7abp773dbios5v.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

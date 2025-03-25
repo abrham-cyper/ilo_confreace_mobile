@@ -1,4 +1,5 @@
 import 'package:event_prokit/main.dart';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -21,7 +22,7 @@ class _CongressPartnersScreenState extends State<CongressPartnersScreen> {
 
   // Function to fetch data from the API
   Future<List<dynamic>> fetchPartners() async {
-    final String apiUrl = 'http://49.13.202.68:5001/api/partnersapp';
+    final String apiUrl = '${AppConstants.baseUrl}/api/partnersapp';
 
     // Retrieve the access token from SharedPreferences
     final prefs = await SharedPreferences.getInstance();

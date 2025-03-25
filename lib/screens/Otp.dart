@@ -1,5 +1,6 @@
 import 'package:event_prokit/screens/EADashedBoardScreen.dart';
 import 'package:event_prokit/screens/EAHomeScreen.dart';
+import 'package:event_prokit/screens/SetProfile.dart';
 import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -116,7 +117,7 @@ Future<void> _storeTokens(String accessToken, String refreshToken) async {
   toast('OTP Verified Successfully');
   Navigator.pushReplacement(
     context,
-    MaterialPageRoute(builder: (context) => EADashedBoardScreen()),
+    MaterialPageRoute(builder: (context) => SetProfile()),
   );
 }
 

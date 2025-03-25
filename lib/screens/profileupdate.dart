@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:image_picker/image_picker.dart';
@@ -27,7 +28,7 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
   String? errorMessage;
 
   // API URL for updating profile (adjust to your backend)
-  final String updateProfileApiUrl = 'http://192.168.65.25:5000/api/user/update-profile';
+  final String updateProfileApiUrl = '${AppConstants.baseUrl}/api/user/update-profile';
 
   // Gender options
   final List<String> genderOptions = ['Male', 'Female', 'Other'];
@@ -58,7 +59,7 @@ class _ProfileUpdateScreenState extends State<ProfileUpdateScreen> {
       final prefs = await SharedPreferences.getInstance();
       final accessToken = prefs.getString('accessToken') ?? '';
       final response = await http.get(
-        Uri.parse('http://192.168.65.25:5000/api/user/profile?email=${widget.email}'),
+        Uri.parse('${AppConstants.baseUrl}/api/user/profile?email=${widget.email}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',

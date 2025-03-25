@@ -1,5 +1,8 @@
+import 'dart:convert';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:http/http.dart' as http;
 import 'package:event_prokit/utils/EAColors.dart'; // Custom colors
 
 class EAForgetPasswordScreen extends StatefulWidget {
@@ -13,12 +16,12 @@ class _EAForgetPasswordScreenState extends State<EAForgetPasswordScreen> {
   final TextEditingController emailOrNameController = TextEditingController();
   bool isLoading = false;
 
-  // Simulate sending email for password reset
+  // Function to send reset link via API
   Future<void> sendResetLink() async {
     String input = emailOrNameController.text.trim();
 
     if (input.isEmpty) {
-      toast("Please enter your email or full name");
+      toast("Please enter your email");
       return;
     }
 
@@ -26,25 +29,87 @@ class _EAForgetPasswordScreenState extends State<EAForgetPasswordScreen> {
       isLoading = true;
     });
 
-    if (input.contains('@') && input.contains('.')) {
-      // Simulate email reset process
-      toast("Password reset link sent to $input");
-    } else {
-      // Simulate full name reset handling
-      toast("Password reset instructions sent to your registered email");
-    }
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConstants.baseUrl}/api/user/forgotPassword'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"email": input}),
+      );
 
-    setState(() {
-      isLoading = false;
-    });
+      if (response.statusCode == 200) {
+        _showSuccessDialog(input);
+      } else {
+        throw Exception('Forgot password failed: ${response.reasonPhrase}');
+      }
+    } catch (error) {
+      toast("An error occurred: $error");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  // Show cool success dialog
+  void _showSuccessDialog(String email) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryColor1, Colors.blueAccent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 60),
+              20.height,
+              Text(
+                "Success!",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              10.height,
+              Text(
+                "A password reset link has been sent to $email. Please check your email and follow the instructions to reset your password.",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+              20.height,
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Back to login
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text(
+                  "Back to Login",
+                  style: TextStyle(color: primaryColor1),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get the current theme data
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // Define background color and text color based on the theme
     final backgroundColor = isDarkMode ? Colors.black : Colors.white;
     final textColor = isDarkMode ? Colors.white : Colors.black;
     final hintTextColor = isDarkMode ? primaryColor1 : Colors.black54;
@@ -52,82 +117,79 @@ class _EAForgetPasswordScreenState extends State<EAForgetPasswordScreen> {
 
     return SafeArea(
       child: Scaffold(
-        backgroundColor: backgroundColor, // Set background color based on theme
+        backgroundColor: backgroundColor,
         body: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Center(
             child: SingleChildScrollView(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                Image.asset(
-                    'images/logo.png', // Path to your logo image
-                    height:150, // Adjust height as needed
-                    width: 150,  // Adjust width as needed
-                    fit: BoxFit.cover, // Ensures the logo fits nicely
+                  Image.asset(
+                    'images/logo.png',
+                    height: 150,
+                    width: 150,
+                    fit: BoxFit.cover,
                   ),
                   20.height,
-                  // Title
                   Text(
                     "Forgot Password",
                     style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
-                      color: primaryColor1, // Set title text color based on theme
+                      color: primaryColor1,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   20.height,
-                  // Subtitle or Instruction
                   Text(
-                    "Enter your email or full name to reset your password.",
+                    "Enter your email to reset your password.",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
-                      color: primaryColor1, // Set instruction text color based on theme
+                      color: primaryColor1,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  40.height, // Spacing
-
-                  // Input field
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  40.height,
+                  // Card Design without Shadows
+                  AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor1,
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ],
+                      gradient: LinearGradient(
+                        colors: [primaryColor1.withOpacity(0.2), Colors.white],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: primaryColor1.withOpacity(0.5),
+                        width: 1.5,
+                      ),
                     ),
                     child: TextField(
                       controller: emailOrNameController,
                       decoration: InputDecoration(
-                        hintText: "Email or Full Name",
-                        hintStyle: TextStyle(color: hintTextColor), // Set hint text color
+                        hintText: "Email",
+                        hintStyle: TextStyle(color: hintTextColor),
                         border: InputBorder.none,
+                        prefixIcon: Icon(Icons.email, color: primaryColor1),
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      style: TextStyle(color: textColor), // Set text color based on theme
+                      style: TextStyle(color: textColor),
                     ),
                   ),
-                  30.height, // Spacing
-
-                  // Submit button
+                  30.height,
                   SizedBox(
                     width: context.width(),
                     height: 50,
                     child: ElevatedButton(
                       onPressed: isLoading ? null : sendResetLink,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: buttonColor, // Set button color based on theme
+                        backgroundColor: buttonColor,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        elevation: 4,
+                        elevation: 4, // Note: Elevation still applies a shadow here
                       ),
                       child: isLoading
                           ? CircularProgressIndicator(
@@ -135,7 +197,7 @@ class _EAForgetPasswordScreenState extends State<EAForgetPasswordScreen> {
                               strokeWidth: 2,
                             )
                           : Text(
-                              "Send Reset Link",
+                              "Send Reset Email",
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -144,17 +206,15 @@ class _EAForgetPasswordScreenState extends State<EAForgetPasswordScreen> {
                             ),
                     ),
                   ),
-                  20.height, // Spacing
-
-                  // Back to Login text
+                  20.height,
                   GestureDetector(
                     onTap: () {
-                      Navigator.pop(context); // Navigate back to the previous screen
+                      Navigator.pop(context);
                     },
                     child: Text(
                       "Back to Login",
                       style: TextStyle(
-                        color: buttonColor, // Set color based on theme
+                        color: buttonColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),

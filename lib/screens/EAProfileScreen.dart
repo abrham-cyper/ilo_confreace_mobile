@@ -152,10 +152,7 @@ class EAProfileScreenState extends State<EAProfileScreen> {
                                   color: white,
                                   borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: Text(
-                                  'Learn More',
-                                  style: boldTextStyle(size: 14, color: primaryColor1),
-                                ),
+                          
                               ),
                             ),
                           ],

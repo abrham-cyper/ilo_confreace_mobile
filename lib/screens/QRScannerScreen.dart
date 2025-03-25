@@ -93,7 +93,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       return;
     }
 
-    final url = 'http://49.13.202.68:5001/api/user/userid/$userId';
+    final url = '${AppConstants.baseUrl}/api/user/userid/$userId';
 
     // Get the access token from SharedPreferences
     final prefs = await SharedPreferences.getInstance();

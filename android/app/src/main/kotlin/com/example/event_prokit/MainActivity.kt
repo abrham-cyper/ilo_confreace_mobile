@@ -1,4 +1,4 @@
-package com.example.event_prokit
+package com.ILO2025.event
 
 import io.flutter.embedding.android.FlutterActivity
 

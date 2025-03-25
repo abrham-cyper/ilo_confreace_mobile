@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:event_prokit/screens/EventDetailPage.dart';
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,7 +34,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
   }
 
   Future<void> _fetchEventDetails(String id) async {
-    final url = 'http://49.13.202.68:5001/api/cards/$id';
+    final url = '${AppConstants.baseUrl}/api/cards/$id';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {

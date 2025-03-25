@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -54,7 +55,7 @@ class _ListEventState extends State<ListEvent> {
   }
 
   Future<void> fetchEventItems() async {
-    const url = 'http://49.13.202.68:5001/api/cards';
+    const url = '${AppConstants.baseUrl}/api/cards';
     try {
       final prefs = await SharedPreferences.getInstance();
       String? accessToken = prefs.getString('accessToken');

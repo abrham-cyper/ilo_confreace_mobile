@@ -1,8 +1,69 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:event_prokit/main.dart'; // For appStore
+import 'package:event_prokit/main.dart';
 import 'package:event_prokit/utils/EAColors.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
+class ProfileService {
+  static const String baseUrl = '${AppConstants.baseUrl}';
+
+  Future<bool> updateProfile({
+    required String fullName,
+    String? country,
+    String? bio,
+    File? profilePic, // Note: For JSON, we'll need to handle file differently
+  }) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? accessToken = prefs.getString('accessToken');
+      if (accessToken == null) throw 'No authentication token found';
+
+      print('Access Token: $accessToken');
+
+      // Prepare JSON body
+      Map<String, dynamic> body = {
+        'fullname': fullName,
+      };
+      if (country != null) body['country'] = country;
+      if (bio != null) body['bio'] = bio;
+      // For profilePic with JSON, you'll need to send a URL or base64 string
+      // For now, we'll skip profilePic since JSON typically doesn't handle raw files
+      // If you need file upload, you'll need to use a separate endpoint or stick with multipart
+
+      print('Request Body: ${jsonEncode(body)}');
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/user/update-profile'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      print('Response Status: ${response.statusCode}');
+      print('Response Body: ${response.body}');
+
+      final jsonResponse = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && jsonResponse['success'] == true) {
+        return true;
+      } else {
+        final error = jsonResponse['error'] ?? jsonResponse['message'] ?? 'Failed to update profile';
+        throw error;
+      }
+    } catch (e) {
+      print('Update Profile Error: $e');
+      throw e.toString();
+    }
+  }
+}
 
 class EditProfileScreen extends StatefulWidget {
   @override
@@ -10,19 +71,67 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  // Controllers for text fields
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController fullNameController = TextEditingController();
   final TextEditingController countryController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
+  final ProfileService _profileService = ProfileService();
+
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    emailController.dispose();
-    phoneController.dispose();
+    fullNameController.dispose();
     countryController.dispose();
     bioController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 300,
+        maxHeight: 300,
+        imageQuality: 85,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      toast("Error picking image: $e");
+    }
+  }
+
+  Future<void> _updateProfile() async {
+    if (fullNameController.text.isEmpty) {
+      toast("Full name cannot be empty");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await _profileService.updateProfile(
+        fullName: fullNameController.text,
+        country: countryController.text.isNotEmpty ? countryController.text : null,
+        bio: bioController.text.isNotEmpty ? bioController.text : null,
+        profilePic: _profileImage, // Note: This won't be sent in JSON
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Profile updated successfully")),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -33,7 +142,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-      
           title: Text(
             "Edit Profile",
             style: TextStyle(
@@ -43,16 +151,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ),
           centerTitle: true,
-          actions: [
-            
-          ],
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Picture Section
               Center(
                 child: Stack(
                   alignment: Alignment.bottomRight,
@@ -75,20 +179,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       child: CircleAvatar(
                         radius: 60,
                         backgroundColor: Colors.grey[300],
-                        child: Icon(
-                          Icons.person_outline,
-                          size: 60,
-                          color: appStore.isDarkModeOn ? Colors.grey[600] : Colors.grey[500],
-                        ),
+                        backgroundImage: _profileImage != null ? FileImage(_profileImage!) : null,
+                        child: _profileImage == null
+                            ? Icon(
+                                Icons.person_outline,
+                                size: 60,
+                                color: appStore.isDarkModeOn ? Colors.grey[600] : Colors.grey[500],
+                              )
+                            : null,
                       ),
                     ),
                     Positioned(
                       bottom: 4,
                       right: 4,
                       child: GestureDetector(
-                        onTap: () {
-                          toast("Change profile picture (feature coming soon)");
-                        },
+                        onTap: _pickImage,
                         child: Container(
                           padding: EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -115,21 +220,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
               SizedBox(height: 32),
-              // Form Fields
-              _buildSectionTitle("Contact Information"),
+              _buildSectionTitle("Personal Information"),
               SizedBox(height: 16),
               _buildTextField(
-                label: "Email",
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                hintText: "Enter your email",
-              ),
-              SizedBox(height: 20),
-              _buildTextField(
-                label: "Phone",
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                hintText: "Enter your phone number",
+                label: "Full Name",
+                controller: fullNameController,
+                hintText: "Enter your full name",
               ),
               SizedBox(height: 32),
               _buildSectionTitle("Location"),
@@ -149,20 +245,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 hintText: "Tell us about yourself",
               ),
               SizedBox(height: 40),
-              // Save Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (emailController.text.isEmpty) {
-                      toast("Email cannot be empty");
-                      return;
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Profile updated successfully")),
-                    );
-                    Navigator.pop(context);
-                  },
+                  onPressed: _isLoading ? null : _updateProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor1,
                     padding: EdgeInsets.symmetric(vertical: 16),
@@ -171,14 +257,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     elevation: 4,
                   ),
-                  child: Text(
-                    "Save Profile",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: white,
-                    ),
-                  ),
+                  child: _isLoading
+                      ? CircularProgressIndicator(color: white)
+                      : Text(
+                          "Save Profile",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: white,
+                          ),
+                        ),
                 ),
               ),
             ],

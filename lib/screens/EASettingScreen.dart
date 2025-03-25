@@ -100,13 +100,13 @@ class _EASettingScreenState extends State<EASettingScreen> {
                 trailing: Icon(Icons.arrow_forward_ios_outlined, size: 18, color: grey.withOpacity(0.3)),
               ),
               SettingItemWidget(
-                title: "Change Bio",
-                leading: Icon(LineIcons.hashtag, size: 30),
-                subTitle: "bio",
+                title: "Change Password",
+                leading: Icon(LineIcons.database, size: 30),
+                subTitle: "Privacy",
                 trailing: Icon(Icons.arrow_forward_ios_outlined, size: 18, color: grey.withOpacity(0.3)),
               ),
               SettingItemWidget(
-                  title: "Payment history",
+                  title: "Privacy Policy",
                   leading: Icon(
                     LineIcons.credit_card,
                     size: 30,

@@ -27,7 +27,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
   }
 
   Future<void> _fetchUserData() async {
-    final url = 'http://49.13.202.68:5001/api/user/userid/${widget.userId}';
+    final url = '${AppConstants.baseUrl}/api/user/userid/${widget.userId}';
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {

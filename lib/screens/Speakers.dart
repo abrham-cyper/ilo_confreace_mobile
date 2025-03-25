@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:animate_do/animate_do.dart';
@@ -51,7 +52,7 @@ Future<Map<String, dynamic>> fetchCardData() async {
 
   // Fetch data from API with authentication
   final response = await http.get(
-    Uri.parse('http://49.13.202.68:5001/api/cards/$eventId'),
+    Uri.parse('${AppConstants.baseUrl}/api/cards/$eventId'),
     headers: {
       'Authorization': 'Bearer $accessToken',
       'Content-Type': 'application/json',

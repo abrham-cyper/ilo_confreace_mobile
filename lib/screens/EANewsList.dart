@@ -106,7 +106,7 @@ class _EANewsListState extends State<EANewsList> {
       }
 
       final response = await http.get(
-        Uri.parse('http://49.13.202.68:5001/api/partners'),
+        Uri.parse('${AppConstants.baseUrl}/api/partners'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -184,7 +184,7 @@ class _EANewsListState extends State<EANewsList> {
             SliverAppBar(
               floating: true,
               pinned: true,
-              expandedHeight: 380.0, // Increased height to accommodate larger gap
+              expandedHeight: 380.0,
               forceElevated: innerBoxIsScrolled,
               title: Text(
                 innerBoxIsScrolled ? "Become a Partner" : "",
@@ -231,7 +231,7 @@ class _EANewsListState extends State<EANewsList> {
                       ),
                     ),
                     Positioned(
-                      bottom: 100, // Increased gap by moving text higher
+                      bottom: 100,
                       left: 12,
                       right: 12,
                       child: Column(
@@ -258,30 +258,14 @@ class _EANewsListState extends State<EANewsList> {
                       ),
                     ),
                     Positioned(
-                      bottom: 40, // Filter buttons stay lower, creating a gap
+                      bottom: 40,
                       left: 12,
                       right: 12,
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: ChoiceChip(
-                                label: Text(
-                                  'All',
-                                  style: TextStyle(
-                                    color: selectedType == null ? Colors.white : Colors.black,
-                                  ),
-                                ),
-                                selected: selectedType == null,
-                                selectedColor: Colors.black, // Black when selected
-                                backgroundColor: Colors.grey.withOpacity(0.7),
-                                onSelected: (selected) {
-                                  if (selected) filterByType(null);
-                                },
-                              ),
-                            ),
+                            // Removed the "All" button
                             ...uniqueTypes.map((type) => Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 4.0),
                               child: ChoiceChip(
@@ -292,7 +276,7 @@ class _EANewsListState extends State<EANewsList> {
                                   ),
                                 ),
                                 selected: selectedType == type,
-                                selectedColor: Colors.black, // Black when selected
+                                selectedColor: Colors.black,
                                 backgroundColor: Colors.grey.withOpacity(0.7),
                                 onSelected: (selected) {
                                   if (selected) filterByType(type);
@@ -386,7 +370,6 @@ class _EANewsListState extends State<EANewsList> {
     );
   }
 }
- 
 
 class EANewsDetailScreen extends StatelessWidget {
   final EAEventList event;
@@ -454,7 +437,6 @@ class EANewsDetailScreen extends StatelessWidget {
               child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
             ),
           ),
-          // Subtle overlay for better text readability
           Container(
             color: Colors.black.withOpacity(0.3),
           ),
@@ -529,8 +511,8 @@ class EANewsDetailScreen extends StatelessWidget {
           _buildDetailRow("VIP Passes", event.vipPasses.toString(), Icons.star),
           _buildDetailRow("Delegate Passes", event.delegatePasses.toString(), Icons.group),
           _buildDetailRow("Gala Dinner Invitations", event.galaDinnerInvitations.toString(), Icons.dinner_dining),
-          _buildDetailRow("Advertisement on Materials", event.advertOnMaterials, Icons.print),
-          _buildDetailRow("Website Advertisement", event.websiteAdvertisement, Icons.web),
+          _buildDetailRow("Advertisement ", event.advertOnMaterials, Icons.print),
+          _buildDetailRow("Website", event.websiteAdvertisement, Icons.web),
         ],
       ),
     );
@@ -605,4 +587,3 @@ class EANewsDetailScreen extends StatelessWidget {
     );
   }
 }
- 

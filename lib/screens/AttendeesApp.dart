@@ -1,3 +1,4 @@
+import 'package:event_prokit/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -116,7 +117,7 @@ class _AttendeesScreenState extends State<AttendeesScreen> {
       }
 
       final response = await http.get(
-        Uri.parse('http://49.13.202.68:5001/api/registerUser'),
+        Uri.parse('${AppConstants.baseUrl}/api/registerUser'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
